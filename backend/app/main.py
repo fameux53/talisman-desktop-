@@ -77,6 +77,10 @@ def create_app() -> FastAPI:
         from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
         app.add_middleware(HTTPSRedirectMiddleware)
 
+    # Mitigate Starlette CVEs: Range header DoS + multipart upload DoS
+    from app.utils.request_guard import RequestGuardMiddleware
+    app.add_middleware(RequestGuardMiddleware)
+
     # NOTE: CSRF and SecurityHeaders middleware temporarily use a simpler approach
     # to avoid BaseHTTPMiddleware interfering with CORSMiddleware header injection.
     # CSRF protection
