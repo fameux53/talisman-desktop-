@@ -1,0 +1,67 @@
+appId: com.talisman.desktop
+productName: Talisman
+copyright: Copyright © 2026 Mike Novius
+
+directories:
+  output: dist
+  buildResources: resources
+
+files:
+  - "dist-electron/**/*"
+  - "resources/**/*"
+  - "package.json"
+
+extraResources:
+  - from: "../frontend/dist"
+    to: "renderer"
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: resources/icon.ico
+  artifactName: Talisman-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+  installerHeaderIcon: resources/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Talisman
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  icon: resources/icon.icns
+  category: public.app-category.business
+  artifactName: Talisman-${version}-${arch}.${ext}
+
+dmg:
+  title: Talisman
+  iconSize: 80
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  icon: resources/icon.png
+  category: Office
+  artifactName: Talisman-${version}-${arch}.${ext}
+
+publish:
+  provider: github
+  owner: fameux53
+  repo: talisman-desktop-

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <!-- Talisman Full Logo (Icon + Wordmark) -->
+  
+  <!-- Shield Icon -->
+  <path d="M35 0 L67 13 L67 40 Q67 68 35 80 Q3 68 3 40 L3 13 Z" fill="#2D6A4F"/>
+  <path d="M35 8 L60 18 L60 40 Q60 62 35 72 Q10 62 10 40 L10 18 Z" fill="#1B4332"/>
+  <path d="M35 18 L52 38 L35 58 L18 38 Z" fill="#40916C"/>
+  <path d="M35 28 L38 35 L45 35 L39.5 40 L41.5 47 L35 43 L28.5 47 L30.5 40 L25 35 L32 35 Z" fill="#B7E4C7"/>
+  
+  <!-- Wordmark -->
+  <text x="85" y="42" font-family="'DM Sans', sans-serif" font-weight="900" font-size="36" fill="#2D6A4F">Talisman</text>
+  <text x="85" y="62" font-family="'DM Sans', sans-serif" font-weight="500" font-size="11" fill="#52B788" letter-spacing="3">BIZNIS ASISTAN</text>
+</svg>

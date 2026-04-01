@@ -1,0 +1,228 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/* ------------------------------------------------------------------ */
+:root {
+  --c-primary: #2D6A4F;
+  --c-primary-dark: #1B4332;
+  --c-secondary: #F4A261;
+  --c-tertiary: #E76F51;
+  --c-accent: #FFD166;
+  --c-bg: #FAFAF5;
+  --c-card: #FFFFFF;
+  --c-card-shadow: 0 2px 12px rgba(45,106,79,0.08);
+  --c-text: #1B1B1B;
+  --c-text2: #3D4A43;  /* boosted from #5C6B63 — 7.2:1 on white */
+  --c-border: #d1d5db;
+  --c-nav-bg: rgba(255,255,255,0.9);
+  --c-nav-border: #f3f4f6;
+  --c-desktop-card: #FFFFFF;
+  --font-heading: 'Nunito', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+/* ── High-contrast / sunlight mode ── */
+[data-theme="high-contrast"] {
+  --c-primary: #1A5035;
+  --c-primary-dark: #0F2D1D;
+  --c-secondary: #D4842E;
+  --c-tertiary: #C94C2E;
+  --c-accent: #D4A818;
+  --c-bg: #FFFFFF;
+  --c-card: #FFFFFF;
+  --c-card-shadow: 0 0 0 1px #222, 0 2px 8px rgba(0,0,0,0.12);
+  --c-text: #000000;
+  --c-text2: #222222;
+  --c-border: #888888;
+  --c-nav-bg: rgba(255,255,255,0.95);
+  --c-nav-border: #cccccc;
+  --c-desktop-card: #FFFFFF;
+}
+
+[data-theme="high-contrast"] .gradient-primary {
+  background: linear-gradient(135deg, #1A5035 0%, #0F2D1D 100%);
+}
+[data-theme="high-contrast"] .gradient-secondary {
+  background: linear-gradient(135deg, #D4842E 0%, #C94C2E 100%);
+}
+[data-theme="high-contrast"] .gradient-teal {
+  background: linear-gradient(135deg, #2B7A56 0%, #1A5035 100%);
+}
+[data-theme="high-contrast"] .card {
+  box-shadow: var(--c-card-shadow);
+  border: 1px solid #ccc;
+}
+[data-theme="high-contrast"] .input-field {
+  border-color: #888;
+  color: #000;
+}
+[data-theme="high-contrast"] .skeleton {
+  background: linear-gradient(90deg, #ddd 25%, #eee 50%, #ddd 75%);
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--c-text);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: contain;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-heading); }
+
+/* Hide scrollbar on mobile */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: #c4c4c4; border-radius: 4px; }
+
+/* ------------------------------------------------------------------ */
+/* Utilities                                                           */
+/* ------------------------------------------------------------------ */
+.safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+.font-heading { font-family: var(--font-heading); }
+.font-body    { font-family: var(--font-body); }
+
+.card {
+  background: var(--c-card);
+  border-radius: 1rem;
+  box-shadow: var(--c-card-shadow);
+}
+
+.input-field {
+  width: 100%;
+  height: 3rem;
+  border-radius: 0.75rem;
+  border: 1px solid #d1d5db;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  font-size: 1.125rem;
+  font-family: var(--font-body);
+  background: white;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.input-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--c-primary);
+  border-color: transparent;
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #2D6A4F 0%, #1B4332 100%);
+}
+.gradient-secondary {
+  background: linear-gradient(135deg, #F4A261 0%, #E76F51 100%);
+}
+.gradient-teal {
+  background: linear-gradient(135deg, #40916C 0%, #2D6A4F 100%);
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+.btn:active { transform: scale(0.97); }
+
+/* ------------------------------------------------------------------ */
+/* Animations                                                          */
+/* ------------------------------------------------------------------ */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.2s ease-out; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.25s ease-out; }
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.animate-pulse-ring { animation: pulse-ring 1.2s ease-out infinite; }
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-slide-up { animation: slide-up 0.3s ease-out; }
+
+/* Success pop — plays on sale confirmation */
+@keyframes success-pop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.08); }
+  60%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+.animate-success-pop { animation: success-pop 0.4s ease-out; }
+
+/* Checkmark draw */
+@keyframes check-draw {
+  0%   { stroke-dashoffset: 24; opacity: 0; }
+  40%  { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+.animate-check-draw {
+  stroke-dasharray: 24;
+  animation: check-draw 0.5s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+/* Toast slide-down + progress bar drain */
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateY(-16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-toast-enter { animation: toast-enter 0.25s ease-out; }
+
+@keyframes toast-progress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* Card appear — staggered child animation */
+@keyframes card-appear {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-card-appear { animation: card-appear 0.3s ease-out backwards; }
+
+/* Shake for validation errors */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.animate-shake { animation: shake 0.4s ease-out; }
+
+/* Page transitions */
+.page-enter {
+  animation: fade-up 0.2s ease-out;
+}

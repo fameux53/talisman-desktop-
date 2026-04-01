@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "talisman"
+version = "0.1.0"
+description = "AI-powered micro-business assistant for Caribbean market vendors"
+authors = []
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.0"
+uvicorn = {version = "^0.34.0", extras = ["standard"]}
+sqlalchemy = {version = "^2.0.0", extras = ["asyncio"]}
+asyncpg = "^0.30.0"
+alembic = "^1.14.0"
+pydantic = "^2.0.0"
+pydantic-settings = "^2.0.0"
+PyJWT = "^2.9.0"
+argon2-cffi = "^23.1.0"
+celery = {version = "^5.4.0", extras = ["redis"]}
+redis = "^5.0.0"
+slowapi = "^0.1.9"
+httpx = "^0.28.0"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.24.0"
+ruff = "^0.8.0"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = ["security: OWASP security hardening tests"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
