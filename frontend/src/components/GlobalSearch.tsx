@@ -56,7 +56,7 @@ export default function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const hidden = HIDDEN_ROUTES.some((r) => location.pathname.startsWith(r));
 
   const search = useCallback(async (q: string) => {

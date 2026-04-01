@@ -21,7 +21,10 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
         saveSupplier: (supplier) => electron_1.ipcRenderer.invoke('db:save-supplier', supplier),
         getReceipts: () => electron_1.ipcRenderer.invoke('db:get-receipts'),
         saveReceipt: (receipt) => electron_1.ipcRenderer.invoke('db:save-receipt', receipt),
-        query: (sql, params) => electron_1.ipcRenderer.invoke('db:query', sql, params),
+        getEmployees: (vendorId) => electron_1.ipcRenderer.invoke('db:get-employees', vendorId),
+        saveEmployee: (employee) => electron_1.ipcRenderer.invoke('db:save-employee', employee),
+        updateEmployee: (vendorId, employeeId, updates) => electron_1.ipcRenderer.invoke('db:update-employee', vendorId, employeeId, updates),
+        deleteEmployee: (vendorId, employeeId) => electron_1.ipcRenderer.invoke('db:delete-employee', vendorId, employeeId),
     },
     // File export
     export: {

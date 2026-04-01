@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useI18n, type Locale } from '../i18n';
+import { useI18n } from '../i18n';
 import LanguageSelector from '../components/LanguageSelector';
 import TalismanLogo from '../components/TalismanLogo';
 

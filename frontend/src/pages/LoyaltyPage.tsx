@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
-import { RiGiftLine, RiAddLine } from 'react-icons/ri';
+import { RiAddLine } from 'react-icons/ri';
 import { useI18n } from '../i18n';
 import { useAuthStore } from '../stores/authStore';
 import {

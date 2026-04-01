@@ -8,10 +8,10 @@ function setupTray(mainWindow) {
     const iconPath = (0, path_1.join)(__dirname, '../resources/tray-icon.png');
     const icon = electron_1.nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
     tray = new electron_1.Tray(icon);
-    tray.setToolTip('MarketMama');
+    tray.setToolTip('Talisman');
     const contextMenu = electron_1.Menu.buildFromTemplate([
         {
-            label: 'Open MarketMama',
+            label: 'Open Talisman',
             click: () => {
                 mainWindow.show();
                 mainWindow.focus();
@@ -49,7 +49,7 @@ function setupTray(mainWindow) {
         },
         { type: 'separator' },
         {
-            label: 'Quit MarketMama',
+            label: 'Quit Talisman',
             click: () => {
                 mainWindow.removeAllListeners('close');
                 electron_1.app.quit();

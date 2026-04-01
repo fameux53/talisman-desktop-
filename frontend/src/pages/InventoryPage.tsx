@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useRef, useState, useEffect, type FormEvent } from 'react';
+import { useMemo, useRef, useState, useEffect, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { RiSearchLine, RiAddLine, RiCloseLine, RiAlertFill, RiAlertLine, RiBookOpenLine, RiFileListLine, RiLayoutGridLine, RiArchiveLine, RiInboxUnarchiveLine, RiDeleteBin6Line, RiMore2Fill, RiPencilLine, RiFileCopyLine, RiSubtractLine, RiSettings3Line, RiArrowLeftRightLine } from 'react-icons/ri';
+import { RiSearchLine, RiAddLine, RiCloseLine, RiAlertLine, RiBookOpenLine, RiFileListLine, RiLayoutGridLine, RiArchiveLine, RiInboxUnarchiveLine, RiDeleteBin6Line, RiMore2Fill, RiPencilLine, RiFileCopyLine, RiSubtractLine, RiSettings3Line, RiArrowLeftRightLine } from 'react-icons/ri';
 import { useI18n, type Locale } from '../i18n';
 import { useProducts } from '../hooks/useProducts';
 import { useSyncStore } from '../stores/syncStore';
-import Toast, { type ToastVariant } from '../components/Toast';
+import { type ToastVariant } from '../components/Toast';
 import api from '../services/api';
-import { putInStore, getAllFromStore, getVendorRecords, deleteFromStore, type ProductRecord, type TransactionRecord, type SupplierRecord, type SupplierPriceRecord, type NoteRecord } from '../services/db';
+import { putInStore, getVendorRecords, deleteFromStore, type ProductRecord, type TransactionRecord, type SupplierRecord, type SupplierPriceRecord } from '../services/db';
 import { useAuthStore } from '../stores/authStore';
 import { useLocationStore } from '../stores/locationStore';
 import StockTransfer from '../components/StockTransfer';
@@ -97,7 +97,7 @@ export default function InventoryPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
-  const [toastVariant, setToastVariant] = useState<ToastVariant>('success');
+  const [_toastVariant, setToastVariant] = useState<ToastVariant>('success');
   const [showArchived, setShowArchived] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [archiveDialog, setArchiveDialog] = useState<{ id: string; name: string } | null>(null);
@@ -996,68 +996,6 @@ function ProductGridCard({ product: p, t, onTap, onContextMenu, longPressTimer }
   );
 }
 
-function ProductCard({ product: p, t, onEdit, onDelete }: {
-  product: ProductRecord; t: (k: string) => string; onEdit: () => void; onDelete: () => void;
-}) {
-  const lowStock = p.low_stock_threshold > 0 && Number(p.stock_quantity) <= p.low_stock_threshold;
-  const maxRef = Math.max(p.low_stock_threshold * 3, Number(p.stock_quantity), 1);
-  const pct = Math.min(100, (Number(p.stock_quantity) / maxRef) * 100);
-  const barColor = pct > 60 ? 'bg-emerald-500' : pct > 30 ? 'bg-[#FFD166]' : 'bg-[#E76F51]';
-
-  const [swiped, setSwiped] = useState(false);
-  const startX = useRef(0);
-
-  return (
-    <div className="relative overflow-hidden rounded-2xl"
-      onTouchStart={(e) => { startX.current = e.touches[0].clientX; }}
-      onTouchEnd={(e) => {
-        const dx = e.changedTouches[0].clientX - startX.current;
-        if (dx < -60) setSwiped(true);
-        else if (dx > 40) setSwiped(false);
-      }}
-    >
-      {swiped && (
-        <button type="button" onClick={() => { setSwiped(false); onDelete(); }}
-          className="absolute right-0 inset-y-0 w-20 bg-[#E76F51] text-white flex items-center justify-center font-bold text-sm z-10">
-          {t('action.delete')}
-        </button>
-      )}
-      <div
-        className={`card p-4 transition-transform ${swiped ? '-translate-x-20' : ''}`}
-        onClick={() => !swiped && onEdit()}
-        role="button" tabIndex={0}
-      >
-        <div className="flex items-start justify-between">
-          <div className="min-w-0 flex-1">
-            <p className="font-heading font-bold text-base text-[var(--c-text)] truncate">
-              {p.name}
-              {p.name_creole && <span className="font-body font-normal text-[var(--c-text2)] ml-1">({p.name_creole})</span>}
-            </p>
-            <div className="flex items-center gap-2 mt-1.5">
-              <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
-              </div>
-              <span className="text-xs text-[var(--c-text2)] whitespace-nowrap">{p.stock_quantity} {p.unit}</span>
-              {lowStock && <RiAlertFill className="h-4 w-4 text-[#E76F51] flex-shrink-0" />}
-            </div>
-          </div>
-          <div className="ml-3 text-right flex-shrink-0">
-            <p className="font-heading font-bold text-lg text-[var(--c-primary)] whitespace-nowrap">
-              {Number(p.current_price).toLocaleString()} {t('label.currency')}
-            </p>
-            {p.cost_price != null && p.cost_price > 0 && (() => {
-              const margin = ((p.current_price - p.cost_price) / p.current_price) * 100;
-              const color = margin >= 20 ? 'text-emerald-600 bg-emerald-50' : margin >= 10 ? 'text-[#F4A261] bg-orange-50' : 'text-[#E76F51] bg-red-50';
-              return <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${color}`}>{t('label.margin')}: {margin.toFixed(1)}%</span>;
-            })()}
-            {p.stock_quantity === 0 && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-[#E76F51] bg-red-50 ml-1">{t('label.out_of_stock')}</span>}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Product sheet ── */
 
 function ProductSheet({ editId, products, t, onClose, onSaved, enqueue, vendorId }: {
@@ -1152,7 +1090,7 @@ function ProductSheet({ editId, products, t, onClose, onSaved, enqueue, vendorId
     try {
       if (editId) {
         // Offline-first: write to IndexedDB immediately
-        const localProduct: ProductRecord = { ...existing!, ...apiPayload, current_price: Number(price), cost_price: costPrice !== '' ? Number(costPrice) : undefined, stock_quantity: Number(stock || '0'), low_stock_threshold: Number(threshold) || 0, photo_url: photoUrl };
+        const localProduct: ProductRecord = { ...existing!, ...apiPayload, name_creole: nameCreole || undefined, current_price: Number(price), cost_price: costPrice !== '' ? Number(costPrice) : undefined, stock_quantity: Number(stock || '0'), low_stock_threshold: Number(threshold) || 0, photo_url: photoUrl };
         await putInStore('products', localProduct);
         onSaved(t('message.product_updated'));
         // Background sync

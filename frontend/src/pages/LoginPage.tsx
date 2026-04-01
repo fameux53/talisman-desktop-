@@ -31,7 +31,7 @@ export default function LoginPage() {
 
   // Business info (populated after phone check)
   const [businessName, setBusinessName] = useState('');
-  const [vendorId, setVendorId] = useState('');
+  const [_vendorId, setVendorId] = useState('');
 
   // Person selection
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);

@@ -4,7 +4,7 @@ import { RiCheckLine, RiArrowRightLine, RiFileListLine } from 'react-icons/ri';
 import { useI18n, type Locale } from '../i18n';
 import { useAuthStore } from '../stores/authStore';
 import { useSyncStore } from '../stores/syncStore';
-import { putInStore, type ProductRecord, getAllFromStore } from '../services/db';
+import { putInStore, type ProductRecord } from '../services/db';
 import Toast from '../components/Toast';
 import { CATEGORIES, STARTER_PRODUCTS, type CatalogProduct } from '../data/starterCatalog';
 

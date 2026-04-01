@@ -6,7 +6,7 @@ import { useAuthStore } from '../stores/authStore';
 import Toast from '../components/Toast';
 import DatePicker from '../components/DatePicker';
 import api from '../services/api';
-import { putInStore, upsertCustomer, type CreditRecord, type CustomerRecord, type NoteRecord } from '../services/db';
+import { putInStore, upsertCustomer, type CreditRecord } from '../services/db';
 import { putCreditEntrySecure, getAllCreditEntriesSecure, getAllCustomersSecure } from '../services/secureDb';
 import { calculateTrustScore, getTrustColors, getTrustStars } from '../utils/trustScore';
 import { getBalanceUrl, getWhatsAppShareUrl } from '../utils/balanceToken';
@@ -67,7 +67,7 @@ export default function CreditPage() {
           <button type="button" onClick={() => setSelectedCustomer(null)} className="flex items-center gap-1 text-[var(--c-primary)] font-medium h-12">
             <RiArrowLeftLine className="h-5 w-5" /> {t('action.back')}
           </button>
-          <CustomerDetail detail={detail} hasOverdue={hasOverdue} t={t} vendorId={vendor?.id} vendorName={vendor?.display_name} />
+          <CustomerDetail detail={detail} hasOverdue={hasOverdue} t={t} vendorId={vendor?.id} vendorName={vendor?.display_name} onShowQr={setQrData} />
           <button type="button" onClick={() => setSheetMode('payment')}
             className="btn w-full h-[52px] gradient-primary text-white text-lg font-heading font-bold rounded-xl shadow-md">
             {t('action.record_payment')}
@@ -100,7 +100,7 @@ export default function CreditPage() {
             </div>
             <div className="md:col-span-3 lg:col-span-2">
               <div className="space-y-4 animate-fade-up">
-                <CustomerDetail detail={detail} hasOverdue={hasOverdue} t={t} vendorId={vendor?.id} vendorName={vendor?.display_name} />
+                <CustomerDetail detail={detail} hasOverdue={hasOverdue} t={t} vendorId={vendor?.id} vendorName={vendor?.display_name} onShowQr={setQrData} />
                 <button type="button" onClick={() => setSheetMode('payment')}
                   className="btn w-full h-[52px] gradient-primary text-white text-lg font-heading font-bold rounded-xl shadow-md">
                   {t('action.record_payment')}
@@ -214,7 +214,7 @@ export default function CreditPage() {
             const hasOverdue = detail.entries.some((e) => e.entry_type === 'CREDIT_GIVEN' && e.due_date && new Date(e.due_date) < new Date());
             return (
               <div className="space-y-4 animate-fade-up">
-                <CustomerDetail detail={detail} hasOverdue={hasOverdue} t={t} vendorId={vendor?.id} vendorName={vendor?.display_name} />
+                <CustomerDetail detail={detail} hasOverdue={hasOverdue} t={t} vendorId={vendor?.id} vendorName={vendor?.display_name} onShowQr={setQrData} />
                 <button type="button" onClick={() => setSheetMode('payment')}
                   className="btn w-full h-[52px] gradient-primary text-white text-lg font-heading font-bold rounded-xl shadow-md">
                   {t('action.record_payment')}
@@ -260,9 +260,9 @@ export default function CreditPage() {
 }
 
 /* ── Customer detail card ── */
-function CustomerDetail({ detail, hasOverdue, t, vendorId, vendorName }: {
+function CustomerDetail({ detail, hasOverdue, t, vendorId, vendorName, onShowQr }: {
   detail: CustomerBalance; hasOverdue: boolean; t: (k: string) => string;
-  vendorId?: string; vendorName?: string;
+  vendorId?: string; vendorName?: string; onShowQr?: (data: { url: string; name: string }) => void;
 }) {
   const trust = calculateTrustScore(detail.balance, detail.entries);
   const colors = getTrustColors(trust.label);
@@ -339,7 +339,7 @@ function CustomerDetail({ detail, hasOverdue, t, vendorId, vendorName }: {
           </button>
           <button
             type="button"
-            onClick={() => setQrData({ url: getBalanceUrl(vendorId, detail.customer_name), name: detail.customer_name })}
+            onClick={() => onShowQr?.({ url: getBalanceUrl(vendorId, detail.customer_name), name: detail.customer_name })}
             className="btn h-11 w-11 rounded-xl bg-white border border-gray-200 text-[var(--c-text2)] font-heading font-bold text-sm flex items-center justify-center"
           >
             📱

@@ -15,7 +15,7 @@ async function createWindow() {
         height: 800,
         minWidth: 900,
         minHeight: 600,
-        title: 'MarketMama',
+        title: 'Talisman',
         icon: (0, path_1.join)(__dirname, '../resources/icon.png'),
         // Professional window chrome
         titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
@@ -39,9 +39,11 @@ async function createWindow() {
         const rendererPath = (0, path_1.join)(process.resourcesPath, 'renderer', 'index.html');
         await mainWindow.loadFile(rendererPath);
     }
-    // Open external links in system browser
+    // Open external links in system browser — only allow https URLs
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        electron_1.shell.openExternal(url);
+        if (/^https?:\/\//i.test(url)) {
+            electron_1.shell.openExternal(url);
+        }
         return { action: 'deny' };
     });
     // Minimize to tray instead of quitting (Windows/Linux)
@@ -58,9 +60,9 @@ async function createWindow() {
 function createMenu() {
     const template = [
         {
-            label: 'MarketMama',
+            label: 'Talisman',
             submenu: [
-                { label: 'About MarketMama', role: 'about' },
+                { label: 'About Talisman', role: 'about' },
                 { type: 'separator' },
                 {
                     label: 'Settings',

@@ -1,6 +1,7 @@
-import { getVendorRecords, type ProductRecord, type TransactionRecord, type ExpenseRecord, type GoalRecord } from './db';
+import { getVendorRecords } from './db';
 import { getAllCreditEntriesSecure, getAllCustomersSecure } from './secureDb';
 import { formatCurrency } from '../utils/currency';
+import type { Locale } from '../i18n';
 import { getLocalToday, getWeekStart, getMonthStart, toLocalDate } from '../utils/dateRange';
 
 export interface Insight {
@@ -27,7 +28,7 @@ function tpl(template: string, vars: Record<string, string | number>): string {
 export async function generateInsights(vendorId: string, locale: string, t: T): Promise<Insight[]> {
   if (!vendorId) return [];
 
-  const [products, transactions, expenses, goals] = await Promise.all([
+  const [products, transactions, _expenses, goals] = await Promise.all([
     getVendorRecords('products', vendorId),
     getVendorRecords('transactions', vendorId),
     getVendorRecords('expenses', vendorId),
@@ -36,7 +37,7 @@ export async function generateInsights(vendorId: string, locale: string, t: T): 
 
   // Credit data — may fail if encrypted store not available
   const customers = await getAllCustomersSecure(vendorId).catch(() => []);
-  const creditEntries = await getAllCreditEntriesSecure(vendorId).catch(() => []);
+  await getAllCreditEntriesSecure(vendorId).catch(() => []);
 
   const activeProducts = products.filter(p => p.is_active !== false);
   const productMap = new Map(products.map(p => [p.id, p]));
@@ -47,7 +48,7 @@ export async function generateInsights(vendorId: string, locale: string, t: T): 
 
   const saleTx = transactions.filter(tx => tx.transaction_type === 'SALE');
   const thisWeekSales = saleTx.filter(tx => toLocalDate(tx.created_at) >= weekStart);
-  const thisMonthSales = saleTx.filter(tx => toLocalDate(tx.created_at) >= monthStart);
+  void saleTx.filter(tx => toLocalDate(tx.created_at) >= monthStart);
 
   const insights: Insight[] = [];
 
@@ -75,7 +76,7 @@ export async function generateInsights(vendorId: string, locale: string, t: T): 
           name: product.name,
           qty: Math.round(topData.qty),
           unit: product.unit,
-          revenue: formatCurrency(topData.revenue, locale),
+          revenue: formatCurrency(topData.revenue, locale as Locale),
         }),
         severity: 'success',
         actionLabel: t('insights.view_reports'),
@@ -122,8 +123,8 @@ export async function generateInsights(vendorId: string, locale: string, t: T): 
       body: overdueCustomers.slice(0, 3).map(c => {
         const lastDate = (c as any).lastActivityDate || (c as any).last_activity_date || (c as any).createdAt;
         const days = lastDate ? Math.floor((Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24)) : '?';
-        return `${c.name}: ${formatCurrency(c.balance, locale)} (${days} ${t('insights.days')})`;
-      }).join('\n') + `\n${t('insights.total')}: ${formatCurrency(totalOverdue, locale)}`,
+        return `${c.name}: ${formatCurrency(c.balance, locale as Locale)} (${days} ${t('insights.days')})`;
+      }).join('\n') + `\n${t('insights.total')}: ${formatCurrency(totalOverdue, locale as Locale)}`,
       severity: 'alert',
       actionLabel: t('insights.view_credit'),
       actionRoute: '/credit',
@@ -144,7 +145,7 @@ export async function generateInsights(vendorId: string, locale: string, t: T): 
       emoji: '📉',
       title: t('insights.low_margin_title'),
       body: lowMarginProducts.slice(0, 3).map(p =>
-        `${p.name}: ${p.margin.toFixed(1)}% ${t('insights.margin')} (${t('insights.cost')}: ${formatCurrency(p.cost_price!, locale)} → ${t('insights.sell')}: ${formatCurrency(p.current_price, locale)})`
+        `${p.name}: ${p.margin.toFixed(1)}% ${t('insights.margin')} (${t('insights.cost')}: ${formatCurrency(p.cost_price!, locale as Locale)} → ${t('insights.sell')}: ${formatCurrency(p.current_price, locale as Locale)})`
       ).join('\n'),
       severity: 'warning',
       actionLabel: t('insights.adjust_prices'),
@@ -184,9 +185,9 @@ export async function generateInsights(vendorId: string, locale: string, t: T): 
         title: t('insights.best_day_title'),
         body: tpl(t('insights.best_day_body'), {
           bestDay: names[best[0]],
-          bestAvg: formatCurrency(Math.round(best[1].total / best[1].count), locale),
+          bestAvg: formatCurrency(Math.round(best[1].total / best[1].count), locale as Locale),
           worstDay: names[worst[0]],
-          worstAvg: formatCurrency(Math.round(worst[1].total / worst[1].count), locale),
+          worstAvg: formatCurrency(Math.round(worst[1].total / worst[1].count), locale as Locale),
         }),
         severity: 'info',
       });
@@ -210,8 +211,8 @@ export async function generateInsights(vendorId: string, locale: string, t: T): 
       emoji: changePercent >= 0 ? '📈' : '📉',
       title: t('insights.revenue_trend_title'),
       body: changePercent >= 0
-        ? tpl(t('insights.revenue_up'), { percent: changePercent, amount: formatCurrency(thisWeekRevenue - lastWeekRevenue, locale) })
-        : tpl(t('insights.revenue_down'), { percent: Math.abs(changePercent), amount: formatCurrency(lastWeekRevenue - thisWeekRevenue, locale) }),
+        ? tpl(t('insights.revenue_up'), { percent: changePercent, amount: formatCurrency(thisWeekRevenue - lastWeekRevenue, locale as Locale) })
+        : tpl(t('insights.revenue_down'), { percent: Math.abs(changePercent), amount: formatCurrency(lastWeekRevenue - thisWeekRevenue, locale as Locale) }),
       severity: changePercent >= 0 ? 'success' : 'warning',
     });
   }
@@ -230,8 +231,8 @@ export async function generateInsights(vendorId: string, locale: string, t: T): 
       emoji: progress >= 100 ? '🎉' : progress >= 50 ? '🔥' : '🎯',
       title: t('insights.goal_title'),
       body: progress >= 100
-        ? tpl(t('insights.goal_reached'), { amount: formatCurrency(todayRevenue, locale) })
-        : tpl(t('insights.goal_progress'), { current: formatCurrency(todayRevenue, locale), target: formatCurrency(dailyGoal.target_amount, locale), percent: progress }),
+        ? tpl(t('insights.goal_reached'), { amount: formatCurrency(todayRevenue, locale as Locale) })
+        : tpl(t('insights.goal_progress'), { current: formatCurrency(todayRevenue, locale as Locale), target: formatCurrency(dailyGoal.target_amount, locale as Locale), percent: progress }),
       severity: progress >= 100 ? 'success' : 'info',
     });
   }
@@ -299,17 +300,17 @@ export async function gatherBusinessContext(vendorId: string, locale: string): P
 
   const lines: string[] = [
     `Pwodwi aktif: ${activeProducts.length}`,
-    `Revni jodi a: ${formatCurrency(todayRevenue, locale)} (${todaySales.length} vant)`,
-    `Revni semèn sa a: ${formatCurrency(weekRevenue, locale)} (${weekSales.length} vant)`,
-    `Total depans: ${formatCurrency(totalExpenses, locale)}`,
-    `Kredi total deyò: ${formatCurrency(totalCredit, locale)} (${customers.filter(c => c.balance > 0).length} kliyan)`,
+    `Revni jodi a: ${formatCurrency(todayRevenue, locale as Locale)} (${todaySales.length} vant)`,
+    `Revni semèn sa a: ${formatCurrency(weekRevenue, locale as Locale)} (${weekSales.length} vant)`,
+    `Total depans: ${formatCurrency(totalExpenses, locale as Locale)}`,
+    `Kredi total deyò: ${formatCurrency(totalCredit, locale as Locale)} (${customers.filter(c => c.balance > 0).length} kliyan)`,
     `Pwodwi stòk ba: ${lowStock.length}`,
     '',
     'Pwodwi (non, pri, stòk):',
-    ...activeProducts.slice(0, 15).map(p => `- ${p.name}: ${formatCurrency(p.current_price, locale)}, stòk: ${p.stock_quantity} ${p.unit}`),
+    ...activeProducts.slice(0, 15).map(p => `- ${p.name}: ${formatCurrency(p.current_price, locale as Locale)}, stòk: ${p.stock_quantity} ${p.unit}`),
     '',
     'Kliyan ak kredi:',
-    ...customers.filter(c => c.balance > 0).slice(0, 10).map(c => `- ${c.name}: ${formatCurrency(c.balance, locale)}`),
+    ...customers.filter(c => c.balance > 0).slice(0, 10).map(c => `- ${c.name}: ${formatCurrency(c.balance, locale as Locale)}`),
   ];
 
   return lines.join('\n');

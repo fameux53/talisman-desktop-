@@ -67,6 +67,7 @@ export interface CreditRecord {
   description?: string;
   due_date?: string;
   reminder_sent: boolean;
+  created_at?: string;
 }
 
 export interface CustomerRecord {
@@ -357,7 +358,7 @@ export async function getAllFromStore<T extends keyof TalismanDB>(
   storeName: T,
 ): Promise<TalismanDB[T]['value'][]> {
   const db = await getDB();
-  return db.getAll(storeName);
+  return db.getAll(storeName as any);
 }
 
 /** Get all records from a store filtered by vendor_id. Use this for all user-facing queries. */
@@ -374,7 +375,7 @@ export async function putInStore<T extends keyof TalismanDB>(
   value: TalismanDB[T]['value'],
 ): Promise<void> {
   const db = await getDB();
-  await db.put(storeName, value);
+  await db.put(storeName as any, value);
 }
 
 export async function deleteFromStore<T extends keyof TalismanDB>(
@@ -382,7 +383,7 @@ export async function deleteFromStore<T extends keyof TalismanDB>(
   key: string,
 ): Promise<void> {
   const db = await getDB();
-  await db.delete(storeName, key);
+  await db.delete(storeName as any, key);
 }
 
 // ---------------------------------------------------------------------------
@@ -415,11 +416,11 @@ export async function clearSyncQueue(): Promise<void> {
  *  They are vendor-scoped (filtered by vendor_id) so they won't leak across vendors. */
 export async function clearAllVendorData(): Promise<void> {
   const db = await getDB();
-  const stores: (keyof TalismanDB)[] = [
+  const stores = [
     'products', 'transactions', 'creditEntries', 'customers',
     'receipts', 'moncashPayments', 'suppliers', 'supplierPrices', 'syncQueue', 'notes',
     'locations', 'locationStock', 'expenses', 'goals', 'loyaltyPrograms', 'loyaltyCards', 'calendarEvents',
-  ];
+  ] as const;
   for (const store of stores) {
     await db.clear(store);
   }

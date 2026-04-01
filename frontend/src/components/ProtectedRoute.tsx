@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import type { Permission } from '../services/db';
 

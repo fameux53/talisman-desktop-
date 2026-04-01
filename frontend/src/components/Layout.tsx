@@ -42,7 +42,7 @@ export default function Layout() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [showQuickNote, setShowQuickNote] = useState(false);
-  const [calcPrefill, setCalcPrefill] = useState<number | null>(null);
+  const [_calcPrefill, setCalcPrefill] = useState<number | null>(null);
   const [receiptData, setReceiptData] = useState<{ product: string; qty: number; price: number; total: number } | null>(null);
   const fabLongPress = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fabDidLongPress = useRef(false);

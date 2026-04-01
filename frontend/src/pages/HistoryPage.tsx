@@ -59,7 +59,7 @@ export default function HistoryPage() {
   const [allEntries, setAllEntries] = useState<UnifiedEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const [_pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<{ productName: string; quantity: number; unitPrice: number; total: number } | null>(null);
   const [toast, setToast] = useState('');

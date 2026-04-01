@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
 import { RiAddLine, RiCloseLine, RiMapPinLine, RiPhoneLine, RiArrowRightSLine, RiSearchLine } from 'react-icons/ri';
 import { useI18n } from '../i18n';
 import { getVendorRecords, getAllFromStore, putInStore, type SupplierRecord, type SupplierPriceRecord } from '../services/db';

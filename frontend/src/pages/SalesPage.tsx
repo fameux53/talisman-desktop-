@@ -10,7 +10,7 @@ import { useAuthStore } from '../stores/authStore';
 import Toast, { type ToastVariant } from '../components/Toast';
 import Receipt from '../components/Receipt';
 import api from '../services/api';
-import { putInStore, getAllFromStore, getVendorRecords, type TransactionRecord, type ProductRecord, type ReceiptRecord, type MonCashPayment, type LoyaltyProgramRecord, type LoyaltyCardRecord } from '../services/db';
+import { putInStore, getVendorRecords, type TransactionRecord, type ReceiptRecord, type MonCashPayment, type LoyaltyProgramRecord, type LoyaltyCardRecord } from '../services/db';
 import { putCreditEntrySecure } from '../services/secureDb';
 import { upsertCustomer } from '../services/db';
 import { getAllCustomersSecure } from '../services/secureDb';

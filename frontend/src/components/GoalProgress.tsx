@@ -15,7 +15,7 @@ export default function GoalProgress({ vendorId, todayRevenue }: GoalProgressPro
   const { t, locale } = useI18n();
   const [goal, setGoal] = useState<GoalRecord | null>(null);
   const [showEditor, setShowEditor] = useState(false);
-  const [celebrated, setCelebrated] = useState(false);
+  const [_celebrated, setCelebrated] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
   const loadGoal = useCallback(async () => {
@@ -139,7 +139,7 @@ export default function GoalProgress({ vendorId, todayRevenue }: GoalProgressPro
 }
 
 /* ── Goal Editor ── */
-function GoalEditor({ vendorId, existing, t, locale, onSave, onClose }: {
+function GoalEditor({ vendorId, existing, t, locale: _locale, onSave, onClose }: {
   vendorId: string; existing: GoalRecord | null;
   t: (k: string) => string; locale: string;
   onSave: (g: GoalRecord) => void; onClose: () => void;

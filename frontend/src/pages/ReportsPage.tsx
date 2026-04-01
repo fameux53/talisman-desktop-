@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  LineChart, Line, Area, AreaChart, ReferenceLine,
+  Area, AreaChart, ReferenceLine,
 } from 'recharts';
 import {
   RiShareForwardFill, RiArrowUpLine, RiArrowDownLine, RiSubtractLine, RiBarChart2Fill,
@@ -37,7 +37,7 @@ function daysBetween(a: string, b: string): number {
 export default function ReportsPage() {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
-  const { products } = useProducts();
+  const { products: _products } = useProducts();
   const { productMap } = useProductMap();
   const vendorId = useAuthStore((s) => s.vendor?.id) ?? '';
   const currentEmployee = useAuthStore((s) => s.currentEmployee);
@@ -502,8 +502,8 @@ ${topProducts.length > 0 ? `<div class="section"><h2>${t('label.top_products')}<
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--c-text2)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: 'var(--c-text2)' }} width={45} axisLine={false} tickLine={false} />
                   <Tooltip
-                    formatter={(v: number, name: string) => [
-                      `${v.toLocaleString()} ${t('label.currency')}`,
+                    formatter={(v: unknown, name: unknown) => [
+                      `${Number(v).toLocaleString()} ${t('label.currency')}`,
                       name === 'revenue' ? t('label.revenue') : t('label.expenses'),
                     ]}
                     contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontFamily: 'var(--font-body)' }}
@@ -548,7 +548,7 @@ ${topProducts.length > 0 ? `<div class="section"><h2>${t('label.top_products')}<
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--c-text2)' }} axisLine={false} tickLine={false} />
                   <YAxis hide />
                   <Tooltip
-                    formatter={(v: number) => [`${v.toLocaleString()} ${t('label.currency')}`, t('label.revenue')]}
+                    formatter={(v: unknown) => [`${Number(v).toLocaleString()} ${t('label.currency')}`, t('label.revenue')]}
                     contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontFamily: 'var(--font-body)' }}
                   />
                   <Area type="monotone" dataKey="cumulative" stroke="var(--c-primary)" strokeWidth={2.5} fill="url(#trendGrad)" dot={false} />

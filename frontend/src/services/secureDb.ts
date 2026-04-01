@@ -22,7 +22,7 @@ export async function getAllCreditEntriesSecure(vendorId?: string): Promise<Cred
   const raw = vendorId
     ? await getVendorRecords('creditEntries', vendorId)
     : await getAllFromStore('creditEntries');
-  return Promise.all(raw.map((r) => decryptSensitiveFields(r as unknown as Record<string, unknown>, CREDIT_PII_FIELDS as string[]))) as Promise<CreditRecord[]>;
+  return Promise.all(raw.map((r) => decryptSensitiveFields(r as unknown as Record<string, unknown>, CREDIT_PII_FIELDS as string[]))) as unknown as Promise<CreditRecord[]>;
 }
 
 // ── Customers ──
@@ -37,5 +37,5 @@ export async function getAllCustomersSecure(vendorId?: string): Promise<Customer
   const raw = vendorId
     ? await getVendorRecords('customers', vendorId)
     : await getAllFromStore('customers');
-  return Promise.all(raw.map((r) => decryptSensitiveFields(r as unknown as Record<string, unknown>, CUSTOMER_PII_FIELDS as string[]))) as Promise<CustomerRecord[]>;
+  return Promise.all(raw.map((r) => decryptSensitiveFields(r as unknown as Record<string, unknown>, CUSTOMER_PII_FIELDS as string[]))) as unknown as Promise<CustomerRecord[]>;
 }

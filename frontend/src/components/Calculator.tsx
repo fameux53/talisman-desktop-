@@ -237,7 +237,7 @@ export default function Calculator({ onClose, onUseInSale }: CalculatorProps) {
       {/* Quick mode chips */}
       <div className="px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-hide">
         {(['change', 'margin', 'bulk'] as QuickMode[]).map((m) => {
-          const emojis = { change: '💰', margin: '📊', bulk: '📦' };
+          const emojis: Record<QuickMode, string> = { standard: '🧮', change: '💰', margin: '📊', bulk: '📦' };
           return (
             <button key={m} type="button" onClick={() => setMode(m)}
               className="flex-shrink-0 px-3 py-1.5 rounded-full bg-[var(--c-bg)] text-[12px] font-medium text-[var(--c-text2)] hover:bg-[#E8F5E9] hover:text-[#2D6A4F] transition-colors whitespace-nowrap">

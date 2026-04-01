@@ -16,7 +16,22 @@ function initDatabase() {
     const dbDir = (0, path_1.join)(userDataPath, 'data');
     if (!(0, fs_1.existsSync)(dbDir))
         (0, fs_1.mkdirSync)(dbDir, { recursive: true });
-    const dbPath = (0, path_1.join)(dbDir, 'marketmama.db');
+    // Migrate from old database names if they exist
+    const newDbPath = (0, path_1.join)(dbDir, 'talisman.db');
+    for (const oldName of ['taliman.db', 'marketmama.db']) {
+        const oldDbPath = (0, path_1.join)(dbDir, oldName);
+        if ((0, fs_1.existsSync)(oldDbPath) && !(0, fs_1.existsSync)(newDbPath)) {
+            console.log(`[Talisman] Renaming database file from ${oldName} to talisman.db...`);
+            const { renameSync } = require('fs');
+            renameSync(oldDbPath, newDbPath);
+            if ((0, fs_1.existsSync)(oldDbPath + '-wal'))
+                renameSync(oldDbPath + '-wal', newDbPath + '-wal');
+            if ((0, fs_1.existsSync)(oldDbPath + '-shm'))
+                renameSync(oldDbPath + '-shm', newDbPath + '-shm');
+            break;
+        }
+    }
+    const dbPath = newDbPath;
     db = new better_sqlite3_1.default(dbPath);
     // Enable WAL mode for better concurrent read/write performance
     db.pragma('journal_mode = WAL');
@@ -145,19 +160,44 @@ function initDatabase() {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS employees (
+      id TEXT PRIMARY KEY,
+      vendor_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      pin_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'assistant',
+      permissions TEXT NOT NULL DEFAULT '[]',
+      is_active INTEGER DEFAULT 1,
+      last_login TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (vendor_id) REFERENCES vendors(id)
+    );
+
     -- Indexes for performance
     CREATE INDEX IF NOT EXISTS idx_products_vendor ON products(vendor_id);
+  `);
+    // Migration: add employee tracking columns to transactions
+    const hasEmployeeId = db.prepare("SELECT COUNT(*) as cnt FROM pragma_table_info('transactions') WHERE name='employee_id'").get();
+    if (hasEmployeeId.cnt === 0) {
+        db.exec(`
+      ALTER TABLE transactions ADD COLUMN employee_id TEXT;
+      ALTER TABLE transactions ADD COLUMN employee_name TEXT;
+    `);
+    }
+    db.exec(`
     CREATE INDEX IF NOT EXISTS idx_transactions_vendor ON transactions(vendor_id);
     CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(created_at);
     CREATE INDEX IF NOT EXISTS idx_credit_customer ON credit_entries(customer_id);
     CREATE INDEX IF NOT EXISTS idx_customers_vendor ON customers(vendor_id);
     CREATE INDEX IF NOT EXISTS idx_receipts_date ON receipts(created_at);
+    CREATE INDEX IF NOT EXISTS idx_employees_vendor ON employees(vendor_id);
   `);
 }
 function getDatabase() {
     return db;
 }
 function getDatabasePath() {
-    return (0, path_1.join)(electron_1.app.getPath('userData'), 'data', 'marketmama.db');
+    return (0, path_1.join)(electron_1.app.getPath('userData'), 'data', 'talisman.db');
 }
 //# sourceMappingURL=database.js.map

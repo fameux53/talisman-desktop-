@@ -6,7 +6,7 @@ import {
   RiArrowDownSLine, RiSmartphoneLine,
 } from 'react-icons/ri';
 import { useI18n, type Locale } from '../i18n';
-import { BUSINESS_TIPS, type BusinessTip } from '../data/businessTips';
+import { BUSINESS_TIPS } from '../data/businessTips';
 import { useAuthStore } from '../stores/authStore';
 import { useProducts } from '../hooks/useProducts';
 import { useProductMap } from '../hooks/useProductMap';
@@ -369,7 +369,7 @@ export default function HomePage() {
 }
 
 function DailyTipCard({ locale, t }: { locale: Locale; t: (k: string) => string }) {
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, _setDismissed] = useState(false);
   const [manualOffset, setManualOffset] = useState(0);
 
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
@@ -474,7 +474,7 @@ function RecentNotesWidget({ vendorId, t }: { vendorId: string; t: (k: string) =
 
 const EXPENSE_EMOJIS: Record<string, string> = { rent: '🏠', transport: '🚐', phone: '📱', salary: '💰', fuel: '⛽', supplies: '🛒', other: '📋' };
 
-function RecurringExpenseReminder({ vendorId, t, locale }: { vendorId: string; t: (k: string) => string; locale: Locale }) {
+function RecurringExpenseReminder({ vendorId, t, locale: _locale }: { vendorId: string; t: (k: string) => string; locale: Locale }) {
   const [dueExpenses, setDueExpenses] = useState<ExpenseRecord[]>([]);
 
   useEffect(() => {

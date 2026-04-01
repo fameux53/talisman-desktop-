@@ -4,7 +4,6 @@ import { useI18n } from '../i18n';
 import { useAuthStore } from '../stores/authStore';
 import { formatCurrency } from '../utils/currency';
 import { formatDate } from '../utils/dateFormat';
-import type { ProductRecord } from '../services/db';
 
 interface ReceiptProps {
   productName: string;

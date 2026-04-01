@@ -11,7 +11,7 @@ function registerExportHandlers() {
         if (!win)
             return null;
         const { filePath } = await electron_1.dialog.showSaveDialog(win, {
-            defaultPath: defaultName || 'marketmama-report.pdf',
+            defaultPath: defaultName || 'talisman-report.pdf',
             filters: [{ name: 'PDF Documents', extensions: ['pdf'] }],
         });
         if (!filePath)
@@ -31,7 +31,7 @@ function registerExportHandlers() {
         if (!win)
             return null;
         const { filePath } = await electron_1.dialog.showSaveDialog(win, {
-            defaultPath: defaultName || 'marketmama-data.csv',
+            defaultPath: defaultName || 'talisman-data.csv',
             filters: [{ name: 'CSV Files', extensions: ['csv'] }],
         });
         if (!filePath)
@@ -46,7 +46,7 @@ function registerExportHandlers() {
             return null;
         const timestamp = new Date().toISOString().slice(0, 10);
         const { filePath } = await electron_1.dialog.showSaveDialog(win, {
-            defaultPath: `marketmama-backup-${timestamp}.db`,
+            defaultPath: `talisman-backup-${timestamp}.db`,
             filters: [{ name: 'Database Backup', extensions: ['db'] }],
         });
         if (!filePath)

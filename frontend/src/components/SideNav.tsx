@@ -6,7 +6,7 @@ import {
   RiPieChart2Fill, RiPieChart2Line,
   RiHandCoinFill, RiHandCoinLine,
   RiHistoryLine, RiAddLine,
-  RiLogoutBoxRLine, RiStore2Line, RiCalculatorLine,
+  RiLogoutBoxRLine, RiStore2Line,
   RiStickyNoteLine, RiStickyNoteFill,
   RiTeamLine, RiTeamFill,
   RiMapPin2Line, RiMapPin2Fill,
@@ -50,7 +50,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/locations', labelKey: 'locations.title', Icon: RiMapPin2Line, IconActive: RiMapPin2Fill, activeColor: 'text-[#EC4899]', activeBg: 'bg-[#FDF2F8]', permission: 'settings' },
 ];
 
-export default function SideNav({ onNewSale, onCalculator }: { onNewSale: () => void; onCalculator: () => void }) {
+export default function SideNav({ onNewSale, onCalculator: _onCalculator }: { onNewSale: () => void; onCalculator: () => void }) {
   const { t } = useI18n();
   const location = useLocation();
   const vendor = useAuthStore((s) => s.vendor);

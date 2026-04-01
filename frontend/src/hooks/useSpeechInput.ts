@@ -1,5 +1,29 @@
 import { useCallback, useRef, useState } from 'react';
 
+// Web Speech API type declarations
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+interface SpeechRecognitionResult {
+  readonly length: number;
+  [index: number]: SpeechRecognitionAlternative;
+}
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 interface SpeechInputResult {
   listening: boolean;
   transcript: string;
@@ -11,7 +35,7 @@ interface SpeechInputResult {
 export function useSpeechInput(onResult?: (text: string) => void): SpeechInputResult {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   const SpeechRecognition =
     typeof window !== 'undefined'
