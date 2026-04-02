@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react';
 import PublicRoute from './components/PublicRoute';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -89,8 +89,12 @@ export default function App() {
     hydrateTheme(vendor?.id);
   }, [hydrateTheme, vendor?.id]);
 
+  // Use HashRouter for Electron (file:// doesn't support history API)
+  const isElectron = !!(window as unknown as { electronAPI?: { isElectron: boolean } }).electronAPI?.isElectron;
+  const Router = isElectron ? HashRouter : BrowserRouter;
+
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         {/* Public routes — redirect to home if already authenticated */}
         <Route element={<PublicRoute />}>
@@ -169,6 +173,6 @@ export default function App() {
         {/* Public 404 — accessible to everyone */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
