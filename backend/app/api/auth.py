@@ -40,15 +40,21 @@ _LOCKOUT_MINUTES = 30
 _PROGRESSIVE_DELAYS = [0, 1, 2, 4, 4]  # seconds per attempt (0-indexed)
 
 
+def _cookie_samesite() -> str:
+    """Use 'none' for cross-origin production (HTTPS), 'lax' otherwise."""
+    return "none" if settings.COOKIE_SECURE else "lax"
+
+
 def _set_auth_cookies(response: JSONResponse, access_token: str, refresh_token: str) -> None:
     secure = settings.COOKIE_SECURE
+    samesite = _cookie_samesite()
     response.set_cookie(
         key="tlsm_access_token", value=access_token,
-        httponly=True, secure=secure, samesite="strict", max_age=3600, path="/",
+        httponly=True, secure=secure, samesite=samesite, max_age=3600, path="/",
     )
     response.set_cookie(
         key="tlsm_refresh_token", value=refresh_token,
-        httponly=True, secure=secure, samesite="strict", max_age=604800, path="/",
+        httponly=True, secure=secure, samesite=samesite, max_age=604800, path="/",
     )
 
 
@@ -230,7 +236,7 @@ async def refresh(
     response = JSONResponse(content={"message": "Token refreshed"})
     response.set_cookie(
         key="tlsm_access_token", value=new_access,
-        httponly=True, secure=settings.COOKIE_SECURE, samesite="strict", max_age=3600, path="/",
+        httponly=True, secure=settings.COOKIE_SECURE, samesite=_cookie_samesite(), max_age=3600, path="/",
     )
     return response
 

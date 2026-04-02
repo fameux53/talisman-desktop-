@@ -32,12 +32,13 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         # Set/refresh CSRF cookie on every response
         if not request.cookies.get(CSRF_COOKIE):
+            samesite = "none" if settings.COOKIE_SECURE else "lax"
             response.set_cookie(
                 key=CSRF_COOKIE,
                 value=secrets.token_urlsafe(32),
                 httponly=False,  # JS must read this
                 secure=settings.COOKIE_SECURE,
-                samesite="strict",
+                samesite=samesite,
                 max_age=86400,
                 path="/",
             )
