@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import AuthUser, get_current_user, get_current_vendor, get_db, get_redis
+from app.api.deps import AuthUser, get_current_user, get_db, get_redis
 from app.config import settings
 from app.models.vendor import Vendor
 from app.schemas.auth import (

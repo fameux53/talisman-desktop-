@@ -1,6 +1,8 @@
 import pytest
 from httpx import AsyncClient
 
+from tests.helpers import _extract_cookie
+
 pytestmark = pytest.mark.asyncio
 
 
@@ -91,8 +93,6 @@ class TestLogin:
 # ---------------------------------------------------------------------------
 # Token refresh
 # ---------------------------------------------------------------------------
-
-from tests.helpers import _extract_cookie
 
 
 class TestRefresh:

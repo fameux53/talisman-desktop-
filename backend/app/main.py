@@ -53,7 +53,6 @@ def create_app() -> FastAPI:
     # Self-hosted Swagger UI (no CDN dependency)
     if show_docs:
         import pathlib
-        from fastapi.openapi.docs import get_swagger_ui_html
         from fastapi.staticfiles import StaticFiles
 
         static_dir = pathlib.Path(__file__).resolve().parent.parent / "static"

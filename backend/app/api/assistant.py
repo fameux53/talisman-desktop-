@@ -9,10 +9,9 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth import limiter
-from app.api.deps import AuthUser, get_db, require_any_role
+from app.api.deps import AuthUser, require_any_role
 from app.config import settings
 
 logger = logging.getLogger("talisman.assistant")
