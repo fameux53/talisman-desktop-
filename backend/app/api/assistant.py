@@ -103,8 +103,12 @@ DONE BIZNIS AKTYÈL:
             logger.error("Anthropic API error %d: %s", resp.status_code, resp.text[:200])
             raise HTTPException(status_code=502, detail="AI service error")
 
-        data = resp.json()
-        reply = data["content"][0]["text"]
+        try:
+            data = resp.json()
+            reply = data["content"][0]["text"]
+        except (KeyError, IndexError, ValueError) as exc:
+            logger.error("Unexpected Anthropic response structure: %s", exc)
+            raise HTTPException(status_code=502, detail="AI service returned an unexpected response")
         return ChatResponse(reply=reply)
 
     except httpx.TimeoutException:

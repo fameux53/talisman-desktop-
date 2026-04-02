@@ -208,7 +208,7 @@ async def refresh(
         try:
             body = await request.json()
             token = body.get("refresh_token")
-        except Exception:
+        except (ValueError, UnicodeDecodeError):
             pass
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token")
