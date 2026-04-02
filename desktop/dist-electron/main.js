@@ -35,23 +35,27 @@ async function createWindow() {
         mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
     else {
-        // In production, load from built files.
-        // Relax cookie policy so API cookies work from file:// origin.
-        const rendererPath = (0, path_1.join)(process.resourcesPath, 'renderer', 'index.html');
-        // Override cookie handling: accept all cookies from the API regardless of SameSite
-        mainWindow.webContents.session.cookies.on('changed', () => { });
-        mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-            // Rewrite SameSite=strict to SameSite=none so file:// origin can store API cookies
-            const headers = details.responseHeaders || {};
-            const setCookie = headers['set-cookie'] || headers['Set-Cookie'];
-            if (setCookie) {
-                const fixed = setCookie.map((c) => c.replace(/SameSite=strict/gi, 'SameSite=None').replace(/; Secure/gi, ''));
-                headers['set-cookie'] = fixed;
-                delete headers['Set-Cookie'];
-            }
-            callback({ responseHeaders: headers });
+        // Serve frontend via local HTTP server so cookies work (file:// breaks SameSite cookies)
+        const http = require('http');
+        const fs = require('fs');
+        const pathMod = require('path');
+        const rendererDir = (0, path_1.join)(process.resourcesPath, 'renderer');
+        const mimeTypes = {
+            '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css',
+            '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json',
+            '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json',
+        };
+        const server = http.createServer((req, res) => {
+            let filePath = (0, path_1.join)(rendererDir, req.url === '/' ? 'index.html' : req.url);
+            if (!fs.existsSync(filePath))
+                filePath = (0, path_1.join)(rendererDir, 'index.html'); // SPA fallback
+            const ext = pathMod.extname(filePath);
+            res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
+            fs.createReadStream(filePath).pipe(res);
         });
-        await mainWindow.loadFile(rendererPath);
+        await new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+        const port = server.address().port;
+        await mainWindow.loadURL(`http://127.0.0.1:${port}`);
     }
     // Open external links in system browser — only allow https URLs
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
