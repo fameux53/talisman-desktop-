@@ -19,6 +19,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Pre-create enum types idempotently (checkfirst=True skips if they exist)
+    sa.Enum("HT", "FR", "EN", name="preferredlanguage").create(op.get_bind(), checkfirst=True)
+    sa.Enum("SALE", "PURCHASE", "ADJUSTMENT", name="transactiontype").create(op.get_bind(), checkfirst=True)
+    sa.Enum("CREDIT_GIVEN", "PAYMENT_RECEIVED", name="creditentrytype").create(op.get_bind(), checkfirst=True)
+    sa.Enum("DAILY", "WEEKLY", name="reporttype").create(op.get_bind(), checkfirst=True)
+
     # --- vendors ---
     op.create_table(
         "vendors",
@@ -28,7 +34,7 @@ def upgrade() -> None:
         sa.Column("pin_hash", sa.String(255), nullable=False),
         sa.Column(
             "preferred_language",
-            sa.Enum("HT", "FR", "EN", name="preferredlanguage"),
+            sa.Enum("HT", "FR", "EN", name="preferredlanguage", create_type=False),
             nullable=False,
         ),
         sa.Column("market_zone", sa.String(100), nullable=True),
@@ -85,7 +91,7 @@ def upgrade() -> None:
         sa.Column("product_id", sa.Uuid(), sa.ForeignKey("products.id", ondelete="SET NULL"), nullable=True),
         sa.Column(
             "transaction_type",
-            sa.Enum("SALE", "PURCHASE", "ADJUSTMENT", name="transactiontype"),
+            sa.Enum("SALE", "PURCHASE", "ADJUSTMENT", name="transactiontype", create_type=False),
             nullable=False,
         ),
         sa.Column("quantity", sa.Numeric(10, 2), nullable=False),
@@ -118,7 +124,7 @@ def upgrade() -> None:
         sa.Column("customer_phone", sa.String(20), nullable=True),
         sa.Column(
             "entry_type",
-            sa.Enum("CREDIT_GIVEN", "PAYMENT_RECEIVED", name="creditentrytype"),
+            sa.Enum("CREDIT_GIVEN", "PAYMENT_RECEIVED", name="creditentrytype", create_type=False),
             nullable=False,
         ),
         sa.Column("amount", sa.Numeric(10, 2), nullable=False),
@@ -148,7 +154,7 @@ def upgrade() -> None:
         sa.Column("vendor_id", sa.Uuid(), sa.ForeignKey("vendors.id", ondelete="CASCADE"), nullable=False),
         sa.Column(
             "report_type",
-            sa.Enum("DAILY", "WEEKLY", name="reporttype"),
+            sa.Enum("DAILY", "WEEKLY", name="reporttype", create_type=False),
             nullable=False,
         ),
         sa.Column("period_start", sa.Date(), nullable=False),
