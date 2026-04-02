@@ -102,4 +102,4 @@ See `backend/.env.example` for all available configuration options including:
 
 ## License
 
-Proprietary. Copyright 2026 Mike Novius.
+MIT License. See [LICENSE](LICENSE) for details.

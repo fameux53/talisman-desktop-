@@ -49,15 +49,22 @@ async function createWindow() {
       '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json',
     };
     const server = http.createServer((req: any, res: any) => {
-      let filePath = join(rendererDir, req.url === '/' ? 'index.html' : req.url);
-      if (!fs.existsSync(filePath)) filePath = join(rendererDir, 'index.html'); // SPA fallback
+      // Strip query string and decode URI
+      const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
+      let filePath = join(rendererDir, urlPath === '/' ? 'index.html' : urlPath);
+      // SPA fallback: if file doesn't exist OR it's a route (no extension), serve index.html
+      if (!fs.existsSync(filePath) || (!pathMod.extname(filePath) && urlPath !== '/')) {
+        filePath = join(rendererDir, 'index.html');
+      }
       const ext = pathMod.extname(filePath);
-      res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
+      res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'text/html' });
       fs.createReadStream(filePath).pipe(res);
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
     const port = server.address().port;
     await mainWindow.loadURL(`http://127.0.0.1:${port}`);
+    // Temporarily enable DevTools for debugging
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
   // Open external links in system browser — only allow https URLs
