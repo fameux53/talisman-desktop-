@@ -63,8 +63,6 @@ async function createWindow() {
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
     const port = server.address().port;
     await mainWindow.loadURL(`http://127.0.0.1:${port}`);
-    // Temporarily enable DevTools for debugging
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
   // Open external links in system browser — only allow https URLs
