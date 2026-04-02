@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  base: './',  // Relative paths — required for Electron file:// loading
   plugins: [
     react(),
     tailwindcss(),
