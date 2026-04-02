@@ -20,6 +20,12 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+# Railway provides postgresql:// but asyncpg requires postgresql+asyncpg://
+if settings.DATABASE_URL.startswith("postgresql://"):
+    settings.DATABASE_URL = settings.DATABASE_URL.replace(
+        "postgresql://", "postgresql+asyncpg://", 1
+    )
+
 # Refuse to start in production with a weak SECRET_KEY
 if settings.ENVIRONMENT == "production" and (
     "change" in settings.SECRET_KEY.lower()

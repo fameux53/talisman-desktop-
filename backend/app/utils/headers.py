@@ -4,12 +4,15 @@ from fastapi import Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 
+from app.config import settings
+
 # Content-Security-Policy notes:
 # - 'unsafe-inline' for style-src is REQUIRED because React uses style={{}} for
 #   dynamic CSS values (animation delays, calculated widths, progress bars).
 #   Tailwind utility classes cannot replace these. This is standard for React apps.
-# - connect-src 'self' allows API calls to the same origin in production.
-#   In development, the frontend dev server proxies to localhost:8000.
+# - connect-src includes CORS_ORIGINS so split-origin deployments work.
+
+_connect_sources = "'self' " + " ".join(settings.CORS_ORIGINS)
 
 _CSP = (
     "default-src 'none'; "
@@ -17,7 +20,7 @@ _CSP = (
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "img-src 'self' data: blob:; "
     "font-src 'self' https://fonts.gstatic.com; "
-    "connect-src 'self'; "
+    f"connect-src {_connect_sources}; "
     "manifest-src 'self'; "
     "worker-src 'self'; "
     "object-src 'none'; "
@@ -33,12 +36,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         response = await call_next(request)
 
-        # Preserve CORS headers — re-inject if origin matches
-        from app.config import settings
-        origin = request.headers.get("origin", "")
-        if origin and any(origin == o for o in settings.CORS_ORIGINS):
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
+        # Don't overwrite CORS headers — CORSMiddleware (outermost) handles them.
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
