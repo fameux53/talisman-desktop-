@@ -12,7 +12,7 @@ from app.config import settings
 #   Tailwind utility classes cannot replace these. This is standard for React apps.
 # - connect-src includes CORS_ORIGINS so split-origin deployments work.
 
-_connect_sources = "'self' " + " ".join(settings.CORS_ORIGINS)
+_connect_sources = "'self' " + " ".join(settings.cors_origins_list)
 
 _CSP = (
     "default-src 'none'; "
