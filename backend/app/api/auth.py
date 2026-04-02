@@ -114,11 +114,12 @@ async def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid phone number or PIN")
 
     # Check lockout FIRST — reject without checking PIN
-    now = datetime.now(timezone.utc)
+    # Use naive UTC to match TIMESTAMP WITHOUT TIME ZONE column
+    now = datetime.utcnow()
     if vendor.locked_until is not None:
         locked = vendor.locked_until
-        if locked.tzinfo is None:
-            locked = locked.replace(tzinfo=timezone.utc)
+        if locked.tzinfo is not None:
+            locked = locked.replace(tzinfo=None)
         if locked > now:
             remaining = int((locked - now).total_seconds())
             raise HTTPException(

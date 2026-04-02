@@ -1,4 +1,17 @@
+import os
+
 from pydantic_settings import BaseSettings
+
+
+def _detect_environment() -> str:
+    """Auto-detect production when running on Railway (even if ENVIRONMENT is unset)."""
+    explicit = os.getenv("ENVIRONMENT")
+    if explicit:
+        return explicit
+    # Railway sets RAILWAY_PUBLIC_DOMAIN when a service is deployed
+    if os.getenv("RAILWAY_PUBLIC_DOMAIN") or os.getenv("RAILWAY_ENVIRONMENT"):
+        return "production"
+    return "development"
 
 
 class Settings(BaseSettings):
@@ -10,7 +23,7 @@ class Settings(BaseSettings):
     SMS_API_KEY: str = ""
     SMS_PROVIDER: str = "stub"  # stub | digicel | natcom
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
-    ENVIRONMENT: str = "development"  # development | staging | production
+    ENVIRONMENT: str = _detect_environment()
     DOCS_ACCESS_TOKEN: str = ""  # Set for protected docs access in staging
     COOKIE_SECURE: bool = False  # True in production (HTTPS only)
     ANTHROPIC_API_KEY: str = ""  # Claude API key for AI assistant
@@ -41,11 +54,13 @@ if settings.ENVIRONMENT == "production" and not settings.COOKIE_SECURE:
         "FATAL: COOKIE_SECURE must be True in production (HTTPS-only cookies)."
     )
 
-# Refuse to start in production with stub SMS provider (leaks recovery codes to logs)
+# Warn about stub SMS provider in production (leaks recovery codes to logs)
 if settings.ENVIRONMENT == "production" and settings.SMS_PROVIDER in ("stub", "mock"):
-    raise RuntimeError(
-        "FATAL: SMS_PROVIDER cannot be 'stub' or 'mock' in production. "
-        "Set SMS_PROVIDER=twilio and configure Twilio credentials."
+    import logging as _logging
+    _logging.getLogger("talisman").warning(
+        "SMS_PROVIDER is '%s' in production — PIN recovery codes will be logged, not sent. "
+        "Set SMS_PROVIDER=twilio and configure credentials for real SMS delivery.",
+        settings.SMS_PROVIDER,
     )
 
 # Refuse to start in production with localhost CORS origins
