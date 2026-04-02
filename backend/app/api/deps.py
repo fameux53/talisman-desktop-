@@ -1,6 +1,6 @@
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Annotated, Callable, Optional
 
 from fastapi import Cookie, Depends, HTTPException, Request, status

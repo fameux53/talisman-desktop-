@@ -3,7 +3,6 @@ Public API endpoints — no authentication required.
 Rate-limited to prevent abuse.
 """
 
-import secrets
 import uuid
 from decimal import Decimal
 from typing import Annotated

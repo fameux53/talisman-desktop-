@@ -32,7 +32,6 @@ async def create_authed_vendor(client: AsyncClient) -> tuple[dict, dict]:
 
     # Get CSRF token first
     csrf = await _get_csrf(client)
-    csrf_header = {"X-CSRF-Token": csrf}
 
     reg = await client.post("/auth/register", json={
         "phone_number": phone,

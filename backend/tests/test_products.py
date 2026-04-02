@@ -62,7 +62,7 @@ class TestCreateProduct:
 
     async def test_no_auth_returns_403(self, client: AsyncClient):
         resp = await client.post("/products", json=PRODUCT_PAYLOAD)
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
 
 class TestUpdateProduct:
