@@ -97,9 +97,9 @@ def create_app() -> FastAPI:
         "allow_methods": ["*"],
         "allow_headers": ["*"],
     }
-    # Only allow localhost wildcard regex in non-production environments
+    # In non-production: allow localhost, private IPs, Railway domain, and Electron (null origin)
     if not is_prod:
-        cors_kwargs["allow_origin_regex"] = r"https?://(localhost|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?"
+        cors_kwargs["allow_origin_regex"] = r"https?://(localhost|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|.*\.up\.railway\.app)(:\d+)?"
     app.add_middleware(CORSMiddleware, **cors_kwargs)
 
     # Request logging with correlation IDs
