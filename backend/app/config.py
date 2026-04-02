@@ -22,13 +22,23 @@ class Settings(BaseSettings):
     SMS_GATEWAY_URL: str = ""
     SMS_API_KEY: str = ""
     SMS_PROVIDER: str = "stub"  # stub | digicel | natcom
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    # Stored as str to avoid pydantic JSON parsing issues with plain URLs
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
     ENVIRONMENT: str = _detect_environment()
     DOCS_ACCESS_TOKEN: str = ""  # Set for protected docs access in staging
     COOKIE_SECURE: bool = False  # True in production (HTTPS only)
     ANTHROPIC_API_KEY: str = ""  # Claude API key for AI assistant
 
     model_config = {"env_file": ".env", "extra": "ignore"}
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS_ORIGINS as comma-separated string or JSON array."""
+        raw = self.CORS_ORIGINS.strip()
+        if raw.startswith("["):
+            import json
+            return json.loads(raw)
+        return [o.strip() for o in raw.split(",") if o.strip()]
 
 
 settings = Settings()
@@ -64,7 +74,7 @@ if settings.ENVIRONMENT == "production" and settings.SMS_PROVIDER in ("stub", "m
     )
 
 # Refuse to start in production with localhost CORS origins
-if settings.ENVIRONMENT == "production" and any("localhost" in o for o in settings.CORS_ORIGINS):
+if settings.ENVIRONMENT == "production" and any("localhost" in o for o in settings.cors_origins_list):
     raise RuntimeError(
         "FATAL: CORS_ORIGINS contains localhost. Set real domain(s) for production."
     )

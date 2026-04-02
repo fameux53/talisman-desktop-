@@ -113,7 +113,7 @@ def create_app() -> FastAPI:
 
     # CORS — must be OUTERMOST (added last = wraps everything)
     cors_kwargs: dict = {
-        "allow_origins": settings.CORS_ORIGINS,
+        "allow_origins": settings.cors_origins_list,
         "allow_credentials": True,
         "expose_headers": ["set-cookie"],
         "allow_methods": ["*"],
