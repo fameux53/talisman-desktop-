@@ -133,7 +133,7 @@ async def bulk_create_transactions(
         try:
             txn = Transaction(
                 vendor_id=user.vendor_id,
-                synced_at=datetime.now(timezone.utc),
+                synced_at=datetime.utcnow(),
                 **item.model_dump(exclude={"synced_at"}),
             )
             db.add(txn)

@@ -28,7 +28,7 @@ class _DecimalEncoder(json.JSONEncoder):
 
 
 async def _aggregate() -> dict:
-    four_weeks_ago = datetime.now(timezone.utc) - timedelta(weeks=_WEEKS)
+    four_weeks_ago = datetime.utcnow() - timedelta(weeks=_WEEKS)
 
     async with async_session() as db:
         # Fetch SALE transactions from the past 4 weeks with product + vendor info
