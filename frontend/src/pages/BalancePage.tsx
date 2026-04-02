@@ -39,7 +39,7 @@ export default function BalancePage() {
   useEffect(() => {
     if (!vendorId || !token) { setError(true); setLoading(false); return; }
 
-    const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
     fetch(`${apiUrl}/credit/balance/${vendorId}/${token}`)
       .then((r) => {
         if (!r.ok) throw new Error('Not found');
