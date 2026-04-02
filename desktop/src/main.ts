@@ -38,8 +38,26 @@ async function createWindow() {
     await mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // In production, load the built React app from extraResources
+    // In production, load from built files.
+    // Relax cookie policy so API cookies work from file:// origin.
     const rendererPath = join(process.resourcesPath, 'renderer', 'index.html');
+
+    // Override cookie handling: accept all cookies from the API regardless of SameSite
+    mainWindow.webContents.session.cookies.on('changed', () => {});
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      // Rewrite SameSite=strict to SameSite=none so file:// origin can store API cookies
+      const headers = details.responseHeaders || {};
+      const setCookie = headers['set-cookie'] || headers['Set-Cookie'];
+      if (setCookie) {
+        const fixed = setCookie.map((c: string) =>
+          c.replace(/SameSite=strict/gi, 'SameSite=None').replace(/; Secure/gi, '')
+        );
+        headers['set-cookie'] = fixed;
+        delete headers['Set-Cookie'];
+      }
+      callback({ responseHeaders: headers });
+    });
+
     await mainWindow.loadFile(rendererPath);
   }
 

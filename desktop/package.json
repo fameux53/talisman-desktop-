@@ -1,6 +1,6 @@
 {
   "name": "talisman-desktop",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Talisman — AI-powered business assistant for Caribbean market vendors",
   "main": "dist-electron/main.js",
   "author": "Mike Novius",
