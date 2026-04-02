@@ -45,10 +45,28 @@ def create_app() -> FastAPI:
         description="AI-powered micro-business assistant for Caribbean market vendors",
         lifespan=lifespan,
         debug=not is_prod,
-        docs_url="/docs" if show_docs else None,
-        redoc_url="/redoc" if show_docs else None,
+        docs_url=None,  # We serve custom docs below
+        redoc_url=None,
         openapi_url="/openapi.json" if show_docs else None,
     )
+
+    # Self-hosted Swagger UI (no CDN dependency)
+    if show_docs:
+        import pathlib
+        from fastapi.openapi.docs import get_swagger_ui_html
+        from fastapi.staticfiles import StaticFiles
+
+        static_dir = pathlib.Path(__file__).resolve().parent.parent / "static"
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+        @app.get("/docs", include_in_schema=False)
+        async def custom_docs():
+            return get_swagger_ui_html(
+                openapi_url="/openapi.json",
+                title="Talisman API",
+                swagger_js_url="/static/swagger-ui-bundle.js",
+                swagger_css_url="/static/swagger-ui.css",
+            )
 
     # ── Production error handlers — no stack traces ──
 
