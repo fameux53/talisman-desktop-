@@ -159,7 +159,7 @@ class TestEdgeCases:
 class TestNlpEndpoint:
     async def test_parse_requires_auth(self, client):
         resp = await client.post("/nlp/parse", json={"text": "Mwen vann 5 mamit mayi"})
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     async def test_parse_returns_intent(self, client):
         from tests.helpers import create_authed_vendor
