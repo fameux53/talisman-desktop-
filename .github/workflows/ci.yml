@@ -41,7 +41,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: backend/.venv
-          key: venv-${{ runner.os }}-3.12-${{ hashFiles('backend/poetry.lock') }}
+          key: venv-${{ runner.os }}-3.12-${{ hashFiles('backend/poetry.lock', 'backend/pyproject.toml') }}
 
       - name: Install dependencies
         run: |
