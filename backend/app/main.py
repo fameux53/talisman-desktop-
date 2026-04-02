@@ -61,13 +61,25 @@ def create_app() -> FastAPI:
 
         @app.get("/docs", include_in_schema=False)
         async def custom_docs():
-            return get_swagger_ui_html(
-                openapi_url="/openapi.json",
-                title="Talisman API",
-                swagger_js_url="/static/swagger-ui-bundle.js",
-                swagger_css_url="/static/swagger-ui.css",
-                swagger_favicon_url="/static/favicon.png",
-            )
+            from fastapi.responses import HTMLResponse
+            return HTMLResponse("""<!DOCTYPE html>
+<html><head>
+<link rel="stylesheet" href="/static/swagger-ui.css">
+<link rel="icon" href="/static/favicon.png">
+<title>Talisman API</title>
+</head><body>
+<div id="swagger-ui"></div>
+<script src="/static/swagger-ui-bundle.js"></script>
+<script>
+SwaggerUIBundle({
+    url: '/openapi.json',
+    dom_id: '#swagger-ui',
+    presets: [SwaggerUIBundle.presets.apis],
+    layout: 'BaseLayout',
+    deepLinking: true
+});
+</script>
+</body></html>""")
 
     # ── Production error handlers — no stack traces ──
 
