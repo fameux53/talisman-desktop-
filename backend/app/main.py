@@ -71,12 +71,14 @@ def create_app() -> FastAPI:
 <div id="swagger-ui"></div>
 <script src="/static/swagger-ui-bundle.js"></script>
 <script>
-SwaggerUIBundle({
-    url: '/openapi.json',
-    dom_id: '#swagger-ui',
-    presets: [SwaggerUIBundle.presets.apis],
-    layout: 'BaseLayout',
-    deepLinking: true
+document.addEventListener('DOMContentLoaded', function() {
+    SwaggerUIBundle({
+        url: '/openapi.json',
+        dom_id: '#swagger-ui',
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: 'BaseLayout',
+        deepLinking: true
+    });
 });
 </script>
 </body></html>""")
