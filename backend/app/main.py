@@ -70,15 +70,7 @@ def create_app() -> FastAPI:
 </head><body>
 <div id="swagger-ui"></div>
 <script src="/static/swagger-ui-bundle.js"></script>
-<script>
-SwaggerUIBundle({
-    url: '/openapi.json',
-    dom_id: '#swagger-ui',
-    presets: [SwaggerUIBundle.presets.apis],
-    layout: 'BaseLayout',
-    deepLinking: true
-});
-</script>
+<script src="/static/swagger-init.js"></script>
 </body></html>""")
 
     # ── Production error handlers — no stack traces ──
