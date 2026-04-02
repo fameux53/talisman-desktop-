@@ -8,7 +8,7 @@ packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.115.0"
+fastapi = "^0.135.0"
 uvicorn = {version = "^0.34.0", extras = ["standard"]}
 sqlalchemy = {version = "^2.0.0", extras = ["asyncio"]}
 asyncpg = "^0.30.0"
