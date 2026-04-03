@@ -1,5 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
+const TOKEN_KEY = 'tlsm_at';
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
   headers: { 'Content-Type': 'application/json' },
@@ -7,10 +9,28 @@ const api = axios.create({
 });
 
 // ---------------------------------------------------------------------------
-// Request interceptor — attach CSRF token on state-changing requests
+// Token helpers — fallback for desktop app where Secure cookies can't be set
+// ---------------------------------------------------------------------------
+
+export function setAccessToken(token: string): void {
+  sessionStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearAccessToken(): void {
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
+// ---------------------------------------------------------------------------
+// Request interceptor — attach Bearer token + CSRF token
 // ---------------------------------------------------------------------------
 
 api.interceptors.request.use((config) => {
+  // Attach stored token as Bearer header (desktop fallback)
+  const token = sessionStorage.getItem(TOKEN_KEY);
+  if (token && !config.headers['Authorization']) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const method = (config.method || '').toLowerCase();
   if (['post', 'put', 'patch', 'delete'].includes(method)) {
     const csrfToken = document.cookie
@@ -75,6 +95,7 @@ api.interceptors.response.use(
       return api(original);
     } catch (refreshError) {
       processQueue(refreshError);
+      clearAccessToken();
       // Clear auth state
       const { useAuthStore } = await import('../stores/authStore');
       useAuthStore.getState().clearVendor();

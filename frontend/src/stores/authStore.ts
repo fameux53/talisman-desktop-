@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '../services/api';
+import api, { setAccessToken, clearAccessToken } from '../services/api';
 import { clearAllVendorData, type Permission, OWNER_PERMISSIONS } from '../services/db';
 
 export interface Vendor {
@@ -88,20 +88,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const employeeId = employee?.id ?? null;
     const role = employee?.role ?? 'owner';
     try {
-      const { data } = await api.post<{ vendor: Vendor; role: string; employee_id: string | null }>('/auth/login', {
+      const { data } = await api.post<{ vendor: Vendor; role: string; employee_id: string | null; access_token?: string; refresh_token?: string }>('/auth/login', {
         phone_number: phone,
         pin,
         employee_id: employeeId,
         role,
       });
       const vendor = data.vendor;
+      if (data.access_token) setAccessToken(data.access_token);
       _persistVendor(vendor);
       void _hashPhone(phone).then(h => localStorage.setItem(PHONE_HASH_KEY, h));
       const currentEmployee: CurrentEmployee = employee
         ? { id: employee.id, name: employee.name, role: employee.role as 'owner' | 'assistant' | 'manager', permissions: employee.permissions }
         : { id: vendor.id, name: vendor.display_name, role: 'owner' as const, permissions: [...OWNER_PERMISSIONS] };
       _persistEmployee(currentEmployee.id, currentEmployee.name, currentEmployee.role);
-      set({ vendor, currentEmployee, isAuthenticated: true });
+      set({ vendor, currentEmployee, isAuthenticated: true, hydrated: true });
     } catch (err) {
       // Employee login: allow offline fallback using cached vendor
       if (employee && !(err as { response?: unknown }).response) {
@@ -118,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 permissions: employee.permissions,
               };
               _persistEmployee(currentEmployee.id, currentEmployee.name, currentEmployee.role);
-              set({ vendor, currentEmployee, isAuthenticated: true });
+              set({ vendor, currentEmployee, isAuthenticated: true, hydrated: true });
               return;
             }
           }
@@ -143,6 +144,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // ignore
     }
+    clearAccessToken();
     localStorage.removeItem(VENDOR_KEY);
     localStorage.removeItem(EMPLOYEE_KEY);
     localStorage.removeItem(PHONE_HASH_KEY);
@@ -159,6 +161,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   clearVendor: () => {
+    clearAccessToken();
     localStorage.removeItem(VENDOR_KEY);
     localStorage.removeItem(EMPLOYEE_KEY);
     localStorage.removeItem(PHONE_HASH_KEY);
