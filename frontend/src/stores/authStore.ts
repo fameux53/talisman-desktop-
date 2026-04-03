@@ -21,6 +21,27 @@ export interface CurrentEmployee {
 const VENDOR_KEY = 'tlsm_vendor';
 const EMPLOYEE_KEY = 'tlsm_employee';
 
+/** Strip sensitive fields before persisting to localStorage. */
+function _safeVendor(v: Vendor): Omit<Vendor, 'phone_number'> & { phone_number: string } {
+  // Mask phone number to last 4 digits for offline display; full number lives server-side only
+  return { ...v, phone_number: v.phone_number.replace(/.(?=.{4})/g, '*') };
+}
+
+function _safeEmployee(e: CurrentEmployee): Record<string, unknown> {
+  // Store only id, name, and role — permissions are re-derived from role on hydrate
+  return { id: e.id, name: e.name, role: e.role };
+}
+
+function _hydrateEmployee(stored: Record<string, unknown>, vendor: Vendor): CurrentEmployee {
+  const role = (stored.role || 'owner') as 'owner' | 'assistant' | 'manager';
+  return {
+    id: (stored.id as string) || vendor.id,
+    name: (stored.name as string) || vendor.display_name,
+    role,
+    permissions: role === 'owner' ? [...OWNER_PERMISSIONS] : [],
+  };
+}
+
 interface AuthState {
   vendor: Vendor | null;
   currentEmployee: CurrentEmployee | null;
@@ -52,11 +73,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         role,
       });
       const vendor = data.vendor;
-      localStorage.setItem(VENDOR_KEY, JSON.stringify(vendor));
+      localStorage.setItem(VENDOR_KEY, JSON.stringify(_safeVendor(vendor)));
       const currentEmployee: CurrentEmployee = employee
         ? { id: employee.id, name: employee.name, role: employee.role as 'owner' | 'assistant' | 'manager', permissions: employee.permissions }
         : { id: vendor.id, name: vendor.display_name, role: 'owner' as const, permissions: [...OWNER_PERMISSIONS] };
-      localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(currentEmployee));
+      localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(_safeEmployee(currentEmployee)));
       set({ vendor, currentEmployee, isAuthenticated: true });
     } catch (err) {
       // Employee login: allow offline fallback using cached vendor
@@ -71,7 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 role: employee.role as 'owner' | 'assistant' | 'manager',
                 permissions: employee.permissions,
               };
-              localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(currentEmployee));
+              localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(_safeEmployee(currentEmployee)));
               set({ vendor, currentEmployee, isAuthenticated: true });
               return;
             }
@@ -125,14 +146,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const vendor: Vendor = JSON.parse(stored);
       const empStored = localStorage.getItem(EMPLOYEE_KEY);
       const currentEmployee: CurrentEmployee = empStored
-        ? JSON.parse(empStored)
+        ? _hydrateEmployee(JSON.parse(empStored), vendor)
         : { id: vendor.id, name: vendor.display_name, role: 'owner' as const, permissions: [...OWNER_PERMISSIONS] };
       set({ vendor, currentEmployee, isAuthenticated: true, hydrated: true });
 
       api.get<{ vendor: Vendor; role: string; employee_id: string | null }>('/auth/me').then(({ data }) => {
         const fresh: Vendor = data.vendor;
         const serverRole = (data.role || 'owner') as 'owner' | 'assistant' | 'manager';
-        localStorage.setItem(VENDOR_KEY, JSON.stringify(fresh));
+        localStorage.setItem(VENDOR_KEY, JSON.stringify(_safeVendor(fresh)));
         // Update employee with server-validated role (cannot be tampered with via localStorage)
         const freshEmployee: CurrentEmployee = {
           id: data.employee_id || fresh.id,
@@ -142,7 +163,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             ? [...OWNER_PERMISSIONS]
             : currentEmployee.permissions, // Preserve custom permissions set by owner
         };
-        localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(freshEmployee));
+        localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(_safeEmployee(freshEmployee)));
         set({ vendor: fresh, currentEmployee: freshEmployee, isAuthenticated: true });
       }).catch((err) => {
         // Only clear auth on explicit 401 (session expired / invalid token).

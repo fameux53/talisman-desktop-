@@ -14,13 +14,20 @@ import os
 logger = logging.getLogger("talisman.sms")
 
 
+def _mask_phone(phone: str) -> str:
+    """Mask phone number, keeping only last 4 digits."""
+    if len(phone) <= 4:
+        return "****"
+    return "*" * (len(phone) - 4) + phone[-4:]
+
+
 class SMSService:
     def __init__(self) -> None:
         self.provider = os.getenv("SMS_PROVIDER", "stub")
 
     async def send(self, to: str, message: str) -> bool:
         if self.provider in ("stub", "mock"):
-            logger.info("[SMS STUB] To: %s | Message: %s", to, message)
+            logger.info("[SMS STUB] To: %s | Length: %d", _mask_phone(to), len(message))
             return True
 
         if self.provider == "twilio":
@@ -47,7 +54,7 @@ class SMSService:
                     data={"To": to, "From": from_number, "Body": message},
                 )
                 if resp.status_code == 201:
-                    logger.info("SMS sent to %s via Twilio", to)
+                    logger.info("SMS sent to %s via Twilio", _mask_phone(to))
                     return True
                 logger.error("Twilio error %d: %s", resp.status_code, resp.text)
                 return False
