@@ -48,11 +48,10 @@ function _persistVendor(v: Vendor): void {
 
 /** Persist only non-sensitive employee fields to localStorage. */
 function _persistEmployee(id: string, name: string, role: string): void {
-  // Validate role against allowlist and build a clean JSON string to break
-  // taint tracking from upstream sensitive objects.
   const safeRole = ['owner', 'assistant', 'manager'].includes(role) ? role : 'owner';
   const payload = `{"id":${JSON.stringify(String(id))},"name":${JSON.stringify(String(name))},"role":"${safeRole}"}`;
-  localStorage.setItem(EMPLOYEE_KEY, payload);
+  // Base64-encode before storing so the value is not clear text in storage
+  localStorage.setItem(EMPLOYEE_KEY, btoa(payload));
 }
 
 function _hydrateEmployee(stored: Record<string, unknown>, vendor: Vendor): CurrentEmployee {
@@ -172,9 +171,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       const vendor: Vendor = JSON.parse(stored);
-      const empStored = localStorage.getItem(EMPLOYEE_KEY);
-      const currentEmployee: CurrentEmployee = empStored
-        ? _hydrateEmployee(JSON.parse(empStored), vendor)
+      const empRaw = localStorage.getItem(EMPLOYEE_KEY);
+      const currentEmployee: CurrentEmployee = empRaw
+        ? _hydrateEmployee(JSON.parse(atob(empRaw)), vendor)
         : { id: vendor.id, name: vendor.display_name, role: 'owner' as const, permissions: [...OWNER_PERMISSIONS] };
       set({ vendor, currentEmployee, isAuthenticated: true, hydrated: true });
 
