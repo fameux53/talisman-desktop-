@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import time
 
@@ -9,18 +10,16 @@ from app.tasks.celery_app import celery
 logger = logging.getLogger(__name__)
 
 
-def _mask_phone(phone: str) -> str:
-    """Mask phone number, keeping only last 4 digits."""
-    if len(phone) <= 4:
-        return "****"
-    return "*" * (len(phone) - 4) + phone[-4:]
+def _phone_ref(phone: str) -> str:
+    """Return a short opaque hash of a phone number for log correlation."""
+    return hashlib.sha256(phone.encode()).hexdigest()[:8]
 
 
 def _send_stub(phone_number: str, message: str) -> dict:
     """Log the SMS and store in Redis for testing."""
     from redis import Redis as SyncRedis
 
-    logger.info("SMS STUB → %s (length: %d)", _mask_phone(phone_number), len(message))
+    logger.info("SMS STUB ref=%s length=%d", _phone_ref(phone_number), len(message))
     r = SyncRedis.from_url(settings.REDIS_URL, decode_responses=True)
     key = f"sms:{phone_number}:{int(time.time())}"
     r.setex(key, 86400, message)  # 24h TTL
@@ -69,5 +68,5 @@ def send_sms(self, phone_number: str, message: str) -> dict:
     try:
         return send_fn(phone_number, message)
     except Exception as exc:
-        logger.exception("SMS send failed for %s via %s", _mask_phone(phone_number), provider)
+        logger.exception("SMS send failed ref=%s via %s", _phone_ref(phone_number), provider)
         raise self.retry(exc=exc, countdown=60)

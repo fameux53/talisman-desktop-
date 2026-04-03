@@ -8,17 +8,16 @@ Supports:
 
 Configure via SMS_PROVIDER env var.
 """
+import hashlib
 import logging
 import os
 
 logger = logging.getLogger("talisman.sms")
 
 
-def _mask_phone(phone: str) -> str:
-    """Mask phone number, keeping only last 4 digits."""
-    if len(phone) <= 4:
-        return "****"
-    return "*" * (len(phone) - 4) + phone[-4:]
+def _phone_ref(phone: str) -> str:
+    """Return a short opaque hash of a phone number for log correlation."""
+    return hashlib.sha256(phone.encode()).hexdigest()[:8]
 
 
 class SMSService:
@@ -27,7 +26,7 @@ class SMSService:
 
     async def send(self, to: str, message: str) -> bool:
         if self.provider in ("stub", "mock"):
-            logger.info("[SMS STUB] To: %s | Length: %d", _mask_phone(to), len(message))
+            logger.info("[SMS STUB] ref=%s length=%d", _phone_ref(to), len(message))
             return True
 
         if self.provider == "twilio":
@@ -54,7 +53,7 @@ class SMSService:
                     data={"To": to, "From": from_number, "Body": message},
                 )
                 if resp.status_code == 201:
-                    logger.info("SMS sent to %s via Twilio", _mask_phone(to))
+                    logger.info("SMS sent ref=%s via Twilio", _phone_ref(to))
                     return True
                 logger.error("Twilio error %d: %s", resp.status_code, resp.text)
                 return False

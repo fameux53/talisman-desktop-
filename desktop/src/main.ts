@@ -48,21 +48,28 @@ async function createWindow() {
       '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json',
       '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json',
     };
+    /** Resolve a URL path to a safe file path within rendererDir, or null if invalid. */
+    function safeResolve(urlPath: string): string | null {
+      const relative = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '');
+      // Reject paths with directory traversal sequences before resolving
+      if (relative.includes('..') || relative.includes('~')) return null;
+      const resolved = pathMod.resolve(rendererDir, relative);
+      // Ensure the resolved path is strictly within rendererDir
+      if (!resolved.startsWith(rendererDir + pathMod.sep) && resolved !== rendererDir) return null;
+      return resolved;
+    }
+
+    const indexPath = join(rendererDir, 'index.html');
     const server = http.createServer((req: any, res: any) => {
-      // Strip query string and decode URI
       const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
-      let filePath = pathMod.resolve(rendererDir, urlPath === '/' ? 'index.html' : '.' + urlPath);
-      // Guard against path traversal — resolved path must stay within rendererDir
-      if (!filePath.startsWith(rendererDir + pathMod.sep) && filePath !== rendererDir) {
-        filePath = join(rendererDir, 'index.html');
-      }
-      // SPA fallback: if file doesn't exist OR it's a route (no extension), serve index.html
-      if (!fs.existsSync(filePath) || (!pathMod.extname(filePath) && urlPath !== '/')) {
-        filePath = join(rendererDir, 'index.html');
-      }
-      const ext = pathMod.extname(filePath);
+      const safePath = safeResolve(urlPath);
+      // Use the safe path only if it resolved within rendererDir and the file exists
+      const servePath = (safePath && fs.existsSync(safePath) && pathMod.extname(safePath))
+        ? safePath
+        : indexPath;
+      const ext = pathMod.extname(servePath);
       res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'text/html' });
-      fs.createReadStream(filePath).pipe(res);
+      fs.createReadStream(servePath).pipe(res);
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
     const port = server.address().port;
