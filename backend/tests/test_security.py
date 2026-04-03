@@ -246,8 +246,14 @@ class TestAuthHardening:
     async def test_tampered_token_rejected(self, client: AsyncClient):
         _, headers = await create_authed_vendor(client)
         token = headers["Authorization"].split(" ")[1]
-        # Flip last char
-        tampered = token[:-1] + ("a" if token[-1] != "a" else "b")
+        # Replace the signature (third segment) with a different value to
+        # guarantee an invalid signature regardless of base64 padding.
+        parts = token.split(".")
+        assert len(parts) == 3, "Expected a 3-part JWT"
+        # Reverse the signature characters — always produces a different value
+        # for any real HMAC signature (minimum 32 bytes base64-encoded).
+        parts[2] = parts[2][::-1] if parts[2] != parts[2][::-1] else parts[2][1:] + parts[2][0]
+        tampered = ".".join(parts)
         resp = await client.get("/products", headers={"Authorization": f"Bearer {tampered}", "X-CSRF-Token": "test-csrf-token"})
         assert resp.status_code == 401
 
