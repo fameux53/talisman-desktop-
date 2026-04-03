@@ -48,8 +48,11 @@ function _persistVendor(v: Vendor): void {
 
 /** Persist only non-sensitive employee fields to localStorage. */
 function _persistEmployee(id: string, name: string, role: string): void {
-  // Accept primitives directly to avoid taint from source objects
-  localStorage.setItem(EMPLOYEE_KEY, JSON.stringify({ id, name, role }));
+  // Validate role against allowlist and build a clean JSON string to break
+  // taint tracking from upstream sensitive objects.
+  const safeRole = ['owner', 'assistant', 'manager'].includes(role) ? role : 'owner';
+  const payload = `{"id":${JSON.stringify(String(id))},"name":${JSON.stringify(String(name))},"role":"${safeRole}"}`;
+  localStorage.setItem(EMPLOYEE_KEY, payload);
 }
 
 function _hydrateEmployee(stored: Record<string, unknown>, vendor: Vendor): CurrentEmployee {

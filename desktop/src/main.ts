@@ -48,25 +48,21 @@ async function createWindow() {
       '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json',
       '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json',
     };
-    /** Resolve a URL path to a safe file path within rendererDir, or null if invalid. */
-    function safeResolve(urlPath: string): string | null {
-      const relative = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '');
-      // Reject paths with directory traversal sequences before resolving
-      if (relative.includes('..') || relative.includes('~')) return null;
-      const resolved = pathMod.resolve(rendererDir, relative);
-      // Ensure the resolved path is strictly within rendererDir
-      if (!resolved.startsWith(rendererDir + pathMod.sep) && resolved !== rendererDir) return null;
-      return resolved;
-    }
-
     const indexPath = join(rendererDir, 'index.html');
+    const rendererPrefix = rendererDir + pathMod.sep;
     const server = http.createServer((req: any, res: any) => {
       const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
-      const safePath = safeResolve(urlPath);
-      // Use the safe path only if it resolved within rendererDir and the file exists
-      const servePath = (safePath && fs.existsSync(safePath) && pathMod.extname(safePath))
-        ? safePath
-        : indexPath;
+      const relative = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '');
+
+      // Inline validation so CodeQL sees the guard protecting fs calls directly
+      let servePath = indexPath;
+      if (!relative.includes('..') && !relative.includes('~')) {
+        const resolved = pathMod.normalize(pathMod.join(rendererDir, relative));
+        if (resolved.startsWith(rendererPrefix) && fs.existsSync(resolved) && pathMod.extname(resolved)) {
+          servePath = resolved;
+        }
+      }
+
       const ext = pathMod.extname(servePath);
       res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'text/html' });
       fs.createReadStream(servePath).pipe(res);
