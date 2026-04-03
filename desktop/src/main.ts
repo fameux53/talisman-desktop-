@@ -51,7 +51,11 @@ async function createWindow() {
     const server = http.createServer((req: any, res: any) => {
       // Strip query string and decode URI
       const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
-      let filePath = join(rendererDir, urlPath === '/' ? 'index.html' : urlPath);
+      let filePath = pathMod.resolve(rendererDir, urlPath === '/' ? 'index.html' : '.' + urlPath);
+      // Guard against path traversal — resolved path must stay within rendererDir
+      if (!filePath.startsWith(rendererDir + pathMod.sep) && filePath !== rendererDir) {
+        filePath = join(rendererDir, 'index.html');
+      }
       // SPA fallback: if file doesn't exist OR it's a route (no extension), serve index.html
       if (!fs.existsSync(filePath) || (!pathMod.extname(filePath) && urlPath !== '/')) {
         filePath = join(rendererDir, 'index.html');
