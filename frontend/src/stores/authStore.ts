@@ -20,16 +20,36 @@ export interface CurrentEmployee {
 
 const VENDOR_KEY = 'tlsm_vendor';
 const EMPLOYEE_KEY = 'tlsm_employee';
+const PHONE_HASH_KEY = 'tlsm_ph';
 
-/** Strip sensitive fields before persisting to localStorage. */
-function _safeVendor(v: Vendor): Omit<Vendor, 'phone_number'> & { phone_number: string } {
-  // Mask phone number to last 4 digits for offline display; full number lives server-side only
-  return { ...v, phone_number: v.phone_number.replace(/.(?=.{4})/g, '*') };
+/**
+ * Simple non-cryptographic hash for offline phone verification.
+ * Returns a hex string with no recoverable PII.
+ */
+async function _hashPhone(phone: string): Promise<string> {
+  const data = new TextEncoder().encode(phone);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-function _safeEmployee(e: CurrentEmployee): Record<string, unknown> {
-  // Store only id, name, and role — permissions are re-derived from role on hydrate
-  return { id: e.id, name: e.name, role: e.role };
+/** Persist only non-sensitive vendor fields to localStorage. */
+function _persistVendor(v: Vendor): void {
+  // Exclude phone_number entirely — it lives server-side only
+  const clean = {
+    id: v.id,
+    display_name: v.display_name,
+    preferred_language: v.preferred_language,
+    market_zone: v.market_zone,
+    is_active: v.is_active,
+    phone_number: '', // placeholder for type compatibility on hydrate
+  };
+  localStorage.setItem(VENDOR_KEY, JSON.stringify(clean));
+}
+
+/** Persist only non-sensitive employee fields to localStorage. */
+function _persistEmployee(id: string, name: string, role: string): void {
+  // Accept primitives directly to avoid taint from source objects
+  localStorage.setItem(EMPLOYEE_KEY, JSON.stringify({ id, name, role }));
 }
 
 function _hydrateEmployee(stored: Record<string, unknown>, vendor: Vendor): CurrentEmployee {
@@ -73,26 +93,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         role,
       });
       const vendor = data.vendor;
-      localStorage.setItem(VENDOR_KEY, JSON.stringify(_safeVendor(vendor)));
+      _persistVendor(vendor);
+      void _hashPhone(phone).then(h => localStorage.setItem(PHONE_HASH_KEY, h));
       const currentEmployee: CurrentEmployee = employee
         ? { id: employee.id, name: employee.name, role: employee.role as 'owner' | 'assistant' | 'manager', permissions: employee.permissions }
         : { id: vendor.id, name: vendor.display_name, role: 'owner' as const, permissions: [...OWNER_PERMISSIONS] };
-      localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(_safeEmployee(currentEmployee)));
+      _persistEmployee(currentEmployee.id, currentEmployee.name, currentEmployee.role);
       set({ vendor, currentEmployee, isAuthenticated: true });
     } catch (err) {
       // Employee login: allow offline fallback using cached vendor
       if (employee && !(err as { response?: unknown }).response) {
         try {
           const stored = localStorage.getItem(VENDOR_KEY);
-          if (stored) {
+          const storedHash = localStorage.getItem(PHONE_HASH_KEY);
+          if (stored && storedHash) {
             const vendor: Vendor = JSON.parse(stored);
-            if (vendor.phone_number === phone) {
+            const inputHash = await _hashPhone(phone);
+            if (inputHash === storedHash) {
               const currentEmployee: CurrentEmployee = {
                 id: employee.id, name: employee.name,
                 role: employee.role as 'owner' | 'assistant' | 'manager',
                 permissions: employee.permissions,
               };
-              localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(_safeEmployee(currentEmployee)));
+              _persistEmployee(currentEmployee.id, currentEmployee.name, currentEmployee.role);
               set({ vendor, currentEmployee, isAuthenticated: true });
               return;
             }
@@ -105,7 +128,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setEmployee: (emp) => {
     if (emp) {
-      localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(emp));
+      _persistEmployee(emp.id, emp.name, emp.role);
     } else {
       localStorage.removeItem(EMPLOYEE_KEY);
     }
@@ -120,6 +143,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     localStorage.removeItem(VENDOR_KEY);
     localStorage.removeItem(EMPLOYEE_KEY);
+    localStorage.removeItem(PHONE_HASH_KEY);
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -135,6 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearVendor: () => {
     localStorage.removeItem(VENDOR_KEY);
     localStorage.removeItem(EMPLOYEE_KEY);
+    localStorage.removeItem(PHONE_HASH_KEY);
     set({ vendor: null, currentEmployee: null, isAuthenticated: false });
   },
 
@@ -153,7 +178,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       api.get<{ vendor: Vendor; role: string; employee_id: string | null }>('/auth/me').then(({ data }) => {
         const fresh: Vendor = data.vendor;
         const serverRole = (data.role || 'owner') as 'owner' | 'assistant' | 'manager';
-        localStorage.setItem(VENDOR_KEY, JSON.stringify(_safeVendor(fresh)));
+        _persistVendor(fresh);
+        void _hashPhone(fresh.phone_number).then(h => localStorage.setItem(PHONE_HASH_KEY, h));
         // Update employee with server-validated role (cannot be tampered with via localStorage)
         const freshEmployee: CurrentEmployee = {
           id: data.employee_id || fresh.id,
@@ -163,7 +189,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             ? [...OWNER_PERMISSIONS]
             : currentEmployee.permissions, // Preserve custom permissions set by owner
         };
-        localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(_safeEmployee(freshEmployee)));
+        _persistEmployee(freshEmployee.id, freshEmployee.name, freshEmployee.role);
         set({ vendor: fresh, currentEmployee: freshEmployee, isAuthenticated: true });
       }).catch((err) => {
         // Only clear auth on explicit 401 (session expired / invalid token).
@@ -172,12 +198,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (err?.response?.status === 401) {
           localStorage.removeItem(VENDOR_KEY);
           localStorage.removeItem(EMPLOYEE_KEY);
+          localStorage.removeItem(PHONE_HASH_KEY);
           set({ vendor: null, currentEmployee: null, isAuthenticated: false });
         }
       });
     } catch {
       localStorage.removeItem(VENDOR_KEY);
       localStorage.removeItem(EMPLOYEE_KEY);
+      localStorage.removeItem(PHONE_HASH_KEY);
       set({ hydrated: true });
     }
   },

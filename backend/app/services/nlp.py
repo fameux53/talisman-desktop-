@@ -73,10 +73,10 @@ def _to_number(token: str) -> float | None:
 
 def _extract_price(text: str) -> float | None:
     """Extract price from 'a <N> goud' or 'pou <N> goud' or just '<N> goud'."""
-    m = re.search(r"(?:a|pou|pa)\s+(\d+(?:[.,]\d{1,2})?)\s*(?:goud|gd|htg)?", text, re.I)
+    m = re.search(r"(?:a|pou|pa)\s+(\d{1,12}(?:[.,]\d{1,2})?)\s*(?:goud|gd|htg)?", text, re.I)
     if m:
         return float(m.group(1).replace(",", "."))
-    m = re.search(r"(\d+(?:[.,]\d{1,2})?)\s*(?:goud|gd|htg)", text, re.I)
+    m = re.search(r"(\d{1,12}(?:[.,]\d{1,2})?)\s*(?:goud|gd|htg)", text, re.I)
     if m:
         return float(m.group(1).replace(",", "."))
     return None
@@ -84,7 +84,7 @@ def _extract_price(text: str) -> float | None:
 
 def _extract_amount(text: str) -> float | None:
     """Extract a monetary amount (e.g. '500 goud' or just a number near 'kont/kredi')."""
-    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:goud|gd|htg)?", text, re.I)
+    m = re.search(r"(\d{1,12}(?:[.,]\d{1,2})?)\s*(?:goud|gd|htg)?", text, re.I)
     if m:
         return float(m.group(1).replace(",", "."))
     return None
@@ -240,7 +240,7 @@ def parse_intent(text: str) -> IntentResult:
     if re.search(r"konbyen\s+\S+(?:\s+\S+){0,10}\s*(?:genyen|rete|gen|nan\s+stòk|nan\s+stok)", lowered) or \
        re.search(r"(?:ki\s+kantite|konbyen)\s+\S+(?:\s+\S+){0,10}\s*(?:mwen|m)\s+gen", lowered):
         # Extract product name: everything between "konbyen" and the verb/question mark
-        m = re.search(r"konbyen\s+(.+?)(?:\s+(?:mwen|m)\s+gen|\s+rete|\s+nan\s+stò?k|\?|$)", lowered)
+        m = re.search(r"konbyen\s+(\S+(?:\s+\S+){0,10}?)(?:\s+(?:mwen|m)\s+gen|\s+rete|\s+nan\s+stò?k|\?|$)", lowered)
         product_name = m.group(1).strip(".,!? ") if m else None
         return IntentResult(
             intent=Intent.CHECK_STOCK,
