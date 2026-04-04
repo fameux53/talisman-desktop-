@@ -96,6 +96,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       const vendor = data.vendor;
       if (data.access_token) setAccessToken(data.access_token);
+      // Upsert vendor into local SQLite so foreign keys work (desktop only)
+      const eApi = (window as unknown as { electronAPI?: { db: { upsertVendor: (v: unknown) => Promise<unknown> } } }).electronAPI;
+      if (eApi?.db?.upsertVendor) void eApi.db.upsertVendor(vendor);
       _persistVendor(vendor);
       void _hashPhone(phone).then(h => localStorage.setItem(PHONE_HASH_KEY, h));
       const currentEmployee: CurrentEmployee = employee
@@ -183,6 +186,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       api.get<{ vendor: Vendor; role: string; employee_id: string | null }>('/auth/me').then(({ data }) => {
         const fresh: Vendor = data.vendor;
         const serverRole = (data.role || 'owner') as 'owner' | 'assistant' | 'manager';
+        const eApi2 = (window as unknown as { electronAPI?: { db: { upsertVendor: (v: unknown) => Promise<unknown> } } }).electronAPI;
+        if (eApi2?.db?.upsertVendor) void eApi2.db.upsertVendor(fresh);
         _persistVendor(fresh);
         void _hashPhone(fresh.phone_number).then(h => localStorage.setItem(PHONE_HASH_KEY, h));
         // Update employee with server-validated role (cannot be tampered with via localStorage)

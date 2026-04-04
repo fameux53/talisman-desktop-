@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Database operations (SQLite)
   db: {
+    upsertVendor: (vendor: unknown) => ipcRenderer.invoke('db:upsert-vendor', vendor),
     getProducts: () => ipcRenderer.invoke('db:get-products'),
     saveProduct: (product: unknown) => ipcRenderer.invoke('db:save-product', product),
     deleteProduct: (id: string) => ipcRenderer.invoke('db:delete-product', id),
