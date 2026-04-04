@@ -94,11 +94,6 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-    # HTTPS redirect in production
-    if is_prod:
-        from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-        app.add_middleware(HTTPSRedirectMiddleware)
-
     # Mitigate Starlette CVEs: Range header DoS + multipart upload DoS
     from app.utils.request_guard import RequestGuardMiddleware
     app.add_middleware(RequestGuardMiddleware)
