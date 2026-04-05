@@ -166,8 +166,10 @@ jobs:
 
       - name: Check for MarketMama references
         run: |
+          # Exclude main.tsx (migration/backwards-compat code) and branding.test.ts (test that searches for the term)
           FOUND=$(grep -rn "MarketMama\|marketmama\|MARKETMAMA\|market_mama" \
             --include="*.ts" --include="*.tsx" --include="*.py" --include="*.json" \
+            --exclude="main.tsx" --exclude="branding.test.ts" \
             frontend/src/ backend/app/ 2>/dev/null || true)
           if [ -n "$FOUND" ]; then
             echo "::error::Old 'MarketMama' references found - should be 'Talisman':"
