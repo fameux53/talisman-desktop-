@@ -94,11 +94,6 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-    # HTTPS redirect in production
-    if is_prod:
-        from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-        app.add_middleware(HTTPSRedirectMiddleware)
-
     # Mitigate Starlette CVEs: Range header DoS + multipart upload DoS
     from app.utils.request_guard import RequestGuardMiddleware
     app.add_middleware(RequestGuardMiddleware)
@@ -121,7 +116,10 @@ def create_app() -> FastAPI:
     }
     # In non-production: allow localhost, private IPs, Railway domain, and Electron (null origin)
     if not is_prod:
-        cors_kwargs["allow_origin_regex"] = r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|.*\.up\.railway\.app)(:\d+)?"
+        cors_kwargs["allow_origin_regex"] = r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|.*\.up\.railway\.app|.*\.vercel\.app)(:\d+)?"
+    else:
+        # Desktop (Electron) serves frontend from http://127.0.0.1:<random-port>
+        cors_kwargs["allow_origin_regex"] = r"https?://127\.0\.0\.1(:\d+)?"
     app.add_middleware(CORSMiddleware, **cors_kwargs)
 
     # Request logging with correlation IDs

@@ -91,7 +91,10 @@ async def register(
 
     access_token = create_access_token(vendor.id)
     refresh_token = create_refresh_token(vendor.id)
-    response = JSONResponse(content={"vendor": vendor_data}, status_code=201)
+    response = JSONResponse(content={
+        "vendor": vendor_data,
+        "access_token": access_token, "refresh_token": refresh_token,
+    }, status_code=201)
     _set_auth_cookies(response, access_token, refresh_token)
     return response
 
@@ -135,7 +138,10 @@ async def login(
         role = body.role if body.role in ("assistant", "manager") else "assistant"
         access_token = create_access_token(vendor.id, employee_id=body.employee_id, role=role)
         refresh_token = create_refresh_token(vendor.id, employee_id=body.employee_id, role=role)
-        response = JSONResponse(content={"vendor": vendor_data, "role": role, "employee_id": body.employee_id})
+        response = JSONResponse(content={
+            "vendor": vendor_data, "role": role, "employee_id": body.employee_id,
+            "access_token": access_token, "refresh_token": refresh_token,
+        })
         _set_auth_cookies(response, access_token, refresh_token)
         return response
 
@@ -168,7 +174,10 @@ async def login(
 
     access_token = create_access_token(vendor.id, employee_id=employee_id, role=role)
     refresh_token = create_refresh_token(vendor.id, employee_id=employee_id, role=role)
-    response = JSONResponse(content={"vendor": vendor_data, "role": role, "employee_id": employee_id})
+    response = JSONResponse(content={
+        "vendor": vendor_data, "role": role, "employee_id": employee_id,
+        "access_token": access_token, "refresh_token": refresh_token,
+    })
     _set_auth_cookies(response, access_token, refresh_token)
     return response
 

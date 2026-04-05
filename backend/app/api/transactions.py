@@ -72,9 +72,11 @@ async def list_transactions(
     if type is not None:
         stmt = stmt.where(Transaction.transaction_type == type)
     if date_from is not None:
-        stmt = stmt.where(Transaction.created_at >= date_from)
+        from datetime import datetime
+        stmt = stmt.where(Transaction.created_at >= datetime.fromisoformat(date_from))
     if date_to is not None:
-        stmt = stmt.where(Transaction.created_at <= date_to)
+        from datetime import datetime
+        stmt = stmt.where(Transaction.created_at <= datetime.fromisoformat(date_to))
 
     stmt = stmt.order_by(Transaction.created_at.desc()).offset(offset).limit(limit)
     result = await db.execute(stmt)

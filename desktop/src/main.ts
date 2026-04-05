@@ -48,17 +48,24 @@ async function createWindow() {
       '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json',
       '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json',
     };
+    const indexPath = join(rendererDir, 'index.html');
+    const rendererPrefix = rendererDir + pathMod.sep;
     const server = http.createServer((req: any, res: any) => {
-      // Strip query string and decode URI
       const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
-      let filePath = join(rendererDir, urlPath === '/' ? 'index.html' : urlPath);
-      // SPA fallback: if file doesn't exist OR it's a route (no extension), serve index.html
-      if (!fs.existsSync(filePath) || (!pathMod.extname(filePath) && urlPath !== '/')) {
-        filePath = join(rendererDir, 'index.html');
+      const relative = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '');
+
+      // Inline validation so CodeQL sees the guard protecting fs calls directly
+      let servePath = indexPath;
+      if (!relative.includes('..') && !relative.includes('~')) {
+        const resolved = pathMod.normalize(pathMod.join(rendererDir, relative));
+        if (resolved.startsWith(rendererPrefix) && fs.existsSync(resolved) && pathMod.extname(resolved)) {
+          servePath = resolved;
+        }
       }
-      const ext = pathMod.extname(filePath);
+
+      const ext = pathMod.extname(servePath);
       res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'text/html' });
-      fs.createReadStream(filePath).pipe(res);
+      fs.createReadStream(servePath).pipe(res);
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
     const port = server.address().port;

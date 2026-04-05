@@ -41,6 +41,28 @@ export function registerIpcHandlers(): void {
 
   // --- Database operations ---
 
+  // Upsert vendor into local SQLite after login (needed for foreign key constraints)
+  ipcMain.handle('db:upsert-vendor', (_event, vendor: Record<string, unknown>) => {
+    const stmt = db.prepare(`
+      INSERT INTO vendors (id, phone_number, display_name, pin_hash, preferred_language, market_zone, is_active, updated_at)
+      VALUES (@id, @phone_number, @display_name, 'remote', @preferred_language, @market_zone, @is_active, datetime('now'))
+      ON CONFLICT(id) DO UPDATE SET
+        display_name = @display_name,
+        preferred_language = @preferred_language,
+        market_zone = @market_zone,
+        is_active = @is_active,
+        updated_at = datetime('now')
+    `);
+    return stmt.run({
+      id: vendor.id || '',
+      phone_number: vendor.phone_number || 'unknown',
+      display_name: vendor.display_name || '',
+      preferred_language: vendor.preferred_language || 'ht',
+      market_zone: vendor.market_zone || null,
+      is_active: vendor.is_active ? 1 : 0,
+    });
+  });
+
   ipcMain.handle('db:get-products', () => {
     return db.prepare('SELECT * FROM products WHERE is_active = 1 ORDER BY name').all();
   });

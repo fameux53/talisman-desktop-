@@ -73,10 +73,10 @@ def _to_number(token: str) -> float | None:
 
 def _extract_price(text: str) -> float | None:
     """Extract price from 'a <N> goud' or 'pou <N> goud' or just '<N> goud'."""
-    m = re.search(r"(?:a|pou|pa)\s+(\d+(?:[.,]\d+)?)\s*(?:goud|gd|htg)?", text, re.I)
+    m = re.search(r"(?:a|pou|pa)\s+(\d{1,12}(?:[.,]\d{1,2})?)\s*(?:goud|gd|htg)?", text, re.I)
     if m:
         return float(m.group(1).replace(",", "."))
-    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:goud|gd|htg)", text, re.I)
+    m = re.search(r"(\d{1,12}(?:[.,]\d{1,2})?)\s*(?:goud|gd|htg)", text, re.I)
     if m:
         return float(m.group(1).replace(",", "."))
     return None
@@ -84,7 +84,7 @@ def _extract_price(text: str) -> float | None:
 
 def _extract_amount(text: str) -> float | None:
     """Extract a monetary amount (e.g. '500 goud' or just a number near 'kont/kredi')."""
-    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:goud|gd|htg)?", text, re.I)
+    m = re.search(r"(\d{1,12}(?:[.,]\d{1,2})?)\s*(?:goud|gd|htg)?", text, re.I)
     if m:
         return float(m.group(1).replace(",", "."))
     return None
@@ -98,7 +98,7 @@ def _extract_customer_name(text: str, *, strip_prefix: str = "") -> str | None:
 
     # Pattern: Madanm/Madam/Msye/Mèt + Name(s)
     m = re.search(
-        r"((?:madanm|madam|msye|mèt|met|ti|manman)\s+[A-ZÀ-Ÿa-zà-ÿ]+(?:\s+[A-ZÀ-Ÿa-zà-ÿ]+)?)",
+        r"((?:madanm|madam|msye|mèt|met|ti|manman)\s+[A-Za-z\u00C0-\u024F]+(?:\s+[A-Za-z\u00C0-\u024F]+)?)",
         cleaned,
         re.I,
     )
@@ -106,7 +106,7 @@ def _extract_customer_name(text: str, *, strip_prefix: str = "") -> str | None:
         return _title_case(m.group(1).strip())
 
     # Fallback: look for a capitalized proper name (2+ chars, starts uppercase)
-    m = re.search(r"\b([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)\b", cleaned)
+    m = re.search(r"\b([A-Z\u00C0-\u024F][a-z\u00E0-\u024F]+(?:\s+[A-Z\u00C0-\u024F][a-z\u00E0-\u024F]+)*)\b", cleaned)
     if m:
         candidate = m.group(1).strip()
         # Avoid matching Creole words that happen to be capitalized at sentence start
@@ -237,10 +237,10 @@ def parse_intent(text: str) -> IntentResult:
         )
 
     # --- CHECK_STOCK ---
-    if re.search(r"konbyen.*(?:genyen|rete|gen|nan\s+stòk|nan\s+stok)", lowered) or \
-       re.search(r"(?:ki\s+kantite|konbyen).*(?:mwen|m)\s+gen", lowered):
+    if re.search(r"konbyen\s+\S+(?:\s+\S+){0,10}\s*(?:genyen|rete|gen|nan\s+stòk|nan\s+stok)", lowered) or \
+       re.search(r"(?:ki\s+kantite|konbyen)\s+\S+(?:\s+\S+){0,10}\s*(?:mwen|m)\s+gen", lowered):
         # Extract product name: everything between "konbyen" and the verb/question mark
-        m = re.search(r"konbyen\s+(.+?)(?:\s+(?:mwen|m)\s+gen|\s+rete|\s+nan\s+stò?k|\?|$)", lowered)
+        m = re.search(r"konbyen\s+(\S+(?:\s+\S+){0,10}?)(?:\s+(?:mwen|m)\s+gen|\s+rete|\s+nan\s+stò?k|\?|$)", lowered)
         product_name = m.group(1).strip(".,!? ") if m else None
         return IntentResult(
             intent=Intent.CHECK_STOCK,
@@ -250,8 +250,8 @@ def parse_intent(text: str) -> IntentResult:
         )
 
     # --- CHECK_CREDIT ---
-    if re.search(r"(?:konbyen|konben).*(?:dwe|dwa)\s*(?:m|mwen)", lowered) or \
-       re.search(r"(?:ki\s+sa|kisa).*dwe", lowered) or \
+    if re.search(r"(?:konbyen|konben)\s+\S+(?:\s+\S+){0,10}\s*(?:dwe|dwa)\s*(?:m|mwen)", lowered) or \
+       re.search(r"(?:ki\s+sa|kisa)\s+\S+(?:\s+\S+){0,10}\s*dwe", lowered) or \
        re.search(r"kont\s+(?:madanm|madam|msye|mèt|met)", lowered, re.I):
         customer = _extract_customer_name(raw)
         return IntentResult(

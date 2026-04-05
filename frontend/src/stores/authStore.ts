@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '../services/api';
+import api, { setAccessToken, clearAccessToken } from '../services/api';
 import { clearAllVendorData, type Permission, OWNER_PERMISSIONS } from '../services/db';
 
 export interface Vendor {
@@ -20,6 +20,49 @@ export interface CurrentEmployee {
 
 const VENDOR_KEY = 'tlsm_vendor';
 const EMPLOYEE_KEY = 'tlsm_employee';
+const PHONE_HASH_KEY = 'tlsm_ph';
+
+/**
+ * Simple non-cryptographic hash for offline phone verification.
+ * Returns a hex string with no recoverable PII.
+ */
+async function _hashPhone(phone: string): Promise<string> {
+  const data = new TextEncoder().encode(phone);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Persist only non-sensitive vendor fields to localStorage. */
+function _persistVendor(v: Vendor): void {
+  // Exclude phone_number entirely — it lives server-side only
+  const clean = {
+    id: v.id,
+    display_name: v.display_name,
+    preferred_language: v.preferred_language,
+    market_zone: v.market_zone,
+    is_active: v.is_active,
+    phone_number: '', // placeholder for type compatibility on hydrate
+  };
+  localStorage.setItem(VENDOR_KEY, JSON.stringify(clean));
+}
+
+/** Persist only non-sensitive employee fields to localStorage. */
+function _persistEmployee(id: string, name: string, role: string): void {
+  const safeRole = ['owner', 'assistant', 'manager'].includes(role) ? role : 'owner';
+  const payload = `{"id":${JSON.stringify(String(id))},"name":${JSON.stringify(String(name))},"role":"${safeRole}"}`;
+  // Base64-encode before storing so the value is not clear text in storage
+  localStorage.setItem(EMPLOYEE_KEY, btoa(payload));
+}
+
+function _hydrateEmployee(stored: Record<string, unknown>, vendor: Vendor): CurrentEmployee {
+  const role = (stored.role || 'owner') as 'owner' | 'assistant' | 'manager';
+  return {
+    id: (stored.id as string) || vendor.id,
+    name: (stored.name as string) || vendor.display_name,
+    role,
+    permissions: role === 'owner' ? [...OWNER_PERMISSIONS] : [],
+  };
+}
 
 interface AuthState {
   vendor: Vendor | null;
@@ -45,34 +88,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const employeeId = employee?.id ?? null;
     const role = employee?.role ?? 'owner';
     try {
-      const { data } = await api.post<{ vendor: Vendor; role: string; employee_id: string | null }>('/auth/login', {
+      const { data } = await api.post<{ vendor: Vendor; role: string; employee_id: string | null; access_token?: string; refresh_token?: string }>('/auth/login', {
         phone_number: phone,
         pin,
         employee_id: employeeId,
         role,
       });
       const vendor = data.vendor;
-      localStorage.setItem(VENDOR_KEY, JSON.stringify(vendor));
+      if (data.access_token) setAccessToken(data.access_token);
+      // Upsert vendor into local SQLite so foreign keys work (desktop only)
+      const eApi = (window as unknown as { electronAPI?: { db: { upsertVendor: (v: unknown) => Promise<unknown> } } }).electronAPI;
+      if (eApi?.db?.upsertVendor) void eApi.db.upsertVendor(vendor);
+      _persistVendor(vendor);
+      void _hashPhone(phone).then(h => localStorage.setItem(PHONE_HASH_KEY, h));
       const currentEmployee: CurrentEmployee = employee
         ? { id: employee.id, name: employee.name, role: employee.role as 'owner' | 'assistant' | 'manager', permissions: employee.permissions }
         : { id: vendor.id, name: vendor.display_name, role: 'owner' as const, permissions: [...OWNER_PERMISSIONS] };
-      localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(currentEmployee));
-      set({ vendor, currentEmployee, isAuthenticated: true });
+      _persistEmployee(currentEmployee.id, currentEmployee.name, currentEmployee.role);
+      set({ vendor, currentEmployee, isAuthenticated: true, hydrated: true });
     } catch (err) {
       // Employee login: allow offline fallback using cached vendor
       if (employee && !(err as { response?: unknown }).response) {
         try {
           const stored = localStorage.getItem(VENDOR_KEY);
-          if (stored) {
+          const storedHash = localStorage.getItem(PHONE_HASH_KEY);
+          if (stored && storedHash) {
             const vendor: Vendor = JSON.parse(stored);
-            if (vendor.phone_number === phone) {
+            const inputHash = await _hashPhone(phone);
+            if (inputHash === storedHash) {
               const currentEmployee: CurrentEmployee = {
                 id: employee.id, name: employee.name,
                 role: employee.role as 'owner' | 'assistant' | 'manager',
                 permissions: employee.permissions,
               };
-              localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(currentEmployee));
-              set({ vendor, currentEmployee, isAuthenticated: true });
+              _persistEmployee(currentEmployee.id, currentEmployee.name, currentEmployee.role);
+              set({ vendor, currentEmployee, isAuthenticated: true, hydrated: true });
               return;
             }
           }
@@ -84,7 +134,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setEmployee: (emp) => {
     if (emp) {
-      localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(emp));
+      _persistEmployee(emp.id, emp.name, emp.role);
     } else {
       localStorage.removeItem(EMPLOYEE_KEY);
     }
@@ -97,8 +147,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // ignore
     }
+    clearAccessToken();
     localStorage.removeItem(VENDOR_KEY);
     localStorage.removeItem(EMPLOYEE_KEY);
+    localStorage.removeItem(PHONE_HASH_KEY);
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -112,8 +164,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   clearVendor: () => {
+    clearAccessToken();
     localStorage.removeItem(VENDOR_KEY);
     localStorage.removeItem(EMPLOYEE_KEY);
+    localStorage.removeItem(PHONE_HASH_KEY);
     set({ vendor: null, currentEmployee: null, isAuthenticated: false });
   },
 
@@ -123,16 +177,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       const vendor: Vendor = JSON.parse(stored);
-      const empStored = localStorage.getItem(EMPLOYEE_KEY);
-      const currentEmployee: CurrentEmployee = empStored
-        ? JSON.parse(empStored)
+      const empRaw = localStorage.getItem(EMPLOYEE_KEY);
+      const currentEmployee: CurrentEmployee = empRaw
+        ? _hydrateEmployee(JSON.parse(atob(empRaw)), vendor)
         : { id: vendor.id, name: vendor.display_name, role: 'owner' as const, permissions: [...OWNER_PERMISSIONS] };
       set({ vendor, currentEmployee, isAuthenticated: true, hydrated: true });
 
       api.get<{ vendor: Vendor; role: string; employee_id: string | null }>('/auth/me').then(({ data }) => {
         const fresh: Vendor = data.vendor;
         const serverRole = (data.role || 'owner') as 'owner' | 'assistant' | 'manager';
-        localStorage.setItem(VENDOR_KEY, JSON.stringify(fresh));
+        const eApi2 = (window as unknown as { electronAPI?: { db: { upsertVendor: (v: unknown) => Promise<unknown> } } }).electronAPI;
+        if (eApi2?.db?.upsertVendor) void eApi2.db.upsertVendor(fresh);
+        _persistVendor(fresh);
+        void _hashPhone(fresh.phone_number).then(h => localStorage.setItem(PHONE_HASH_KEY, h));
         // Update employee with server-validated role (cannot be tampered with via localStorage)
         const freshEmployee: CurrentEmployee = {
           id: data.employee_id || fresh.id,
@@ -142,7 +199,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             ? [...OWNER_PERMISSIONS]
             : currentEmployee.permissions, // Preserve custom permissions set by owner
         };
-        localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(freshEmployee));
+        _persistEmployee(freshEmployee.id, freshEmployee.name, freshEmployee.role);
         set({ vendor: fresh, currentEmployee: freshEmployee, isAuthenticated: true });
       }).catch((err) => {
         // Only clear auth on explicit 401 (session expired / invalid token).
@@ -151,12 +208,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (err?.response?.status === 401) {
           localStorage.removeItem(VENDOR_KEY);
           localStorage.removeItem(EMPLOYEE_KEY);
+          localStorage.removeItem(PHONE_HASH_KEY);
           set({ vendor: null, currentEmployee: null, isAuthenticated: false });
         }
       });
     } catch {
       localStorage.removeItem(VENDOR_KEY);
       localStorage.removeItem(EMPLOYEE_KEY);
+      localStorage.removeItem(PHONE_HASH_KEY);
       set({ hydrated: true });
     }
   },

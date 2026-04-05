@@ -5,7 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary.tsx'
 import App from './App.tsx'
 
 // ── Security: purge any tokens from localStorage (tokens belong in httpOnly cookies only) ──
-for (const key of ['access_token', 'refresh_token', 'token', 'jwt', 'at', 'rt']) {
+  for (const key of ['access_token', 'refresh_token', 'token', 'jwt']) {
   for (const prefix of ['tlsm_', 'tl_', 'mm_', '']) {
     localStorage.removeItem(prefix + key);
     sessionStorage.removeItem(prefix + key);
