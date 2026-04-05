@@ -117,6 +117,9 @@ def create_app() -> FastAPI:
     # In non-production: allow localhost, private IPs, Railway domain, and Electron (null origin)
     if not is_prod:
         cors_kwargs["allow_origin_regex"] = r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|.*\.up\.railway\.app|.*\.vercel\.app)(:\d+)?"
+    else:
+        # Desktop (Electron) serves frontend from http://127.0.0.1:<random-port>
+        cors_kwargs["allow_origin_regex"] = r"https?://127\.0\.0\.1(:\d+)?"
     app.add_middleware(CORSMiddleware, **cors_kwargs)
 
     # Request logging with correlation IDs
